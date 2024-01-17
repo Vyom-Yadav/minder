@@ -22,8 +22,10 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	minderv1 "github.com/stacklok/minder/pkg/api/protobuf/go/minder/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/stacklok/minder/internal/util"
 )
@@ -186,6 +188,80 @@ func TestInt32FromString(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.want, got, "result didn't match")
+		})
+	}
+}
+
+func TestHashProfileRuleSHA256(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		rule     *minderv1.Profile_Rule
+		expected string
+	}{
+		{
+			name: "valid rule",
+			rule: &minderv1.Profile_Rule{
+				Type: "dependabot_configured",
+				Def: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"package_ecosystem": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: "gomod",
+							},
+						},
+						"schedule_interval": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: "daily",
+							},
+						},
+						"apply_if_file": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: "go.mod",
+							},
+						},
+					},
+				},
+			},
+			expected: "f83b7f3e1af321fcd4a409a712a9ff3f0522f98993bf200606905e385b055bff",
+		},
+		{
+			name: "valid rule with different order",
+			rule: &minderv1.Profile_Rule{
+				Type: "dependabot_configured",
+				Def: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"package_ecosystem": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: "npm",
+							},
+						},
+						"schedule_interval": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: "daily",
+							},
+						},
+						"apply_if_file": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: "docs/package.json",
+							},
+						},
+					},
+				},
+			},
+			expected: "77734ed8f993e529173d1b05e7e6f5ded2dd6099f3213395d39dc09a841be213",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			hash, err := util.HashProfileRuleSHA256(tc.rule)
+			require.NoError(t, err, "expected no error")
+			assert.Equal(t, tc.expected, hash, "hash didn't match")
 		})
 	}
 }

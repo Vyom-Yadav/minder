@@ -155,10 +155,20 @@ func RenderRuleEvaluationStatusTable(
 	statuses []*minderv1.RuleEvaluationStatus,
 	t table.Table,
 ) {
+	ruleTypeNameCount := make(map[string]int)
 	for _, eval := range statuses {
+		ruleTypeNameCount[eval.RuleTypeName]++
+	}
+
+	for _, eval := range statuses {
+		ruleName := eval.RuleTypeName
+		if ruleTypeNameCount[eval.RuleTypeName] > 1 {
+			ruleName = eval.RuleTypeName + "\n(" + eval.RuleHash + ")"
+		}
+
 		t.AddRowWithColor(
 			layouts.NoColor(eval.RuleId),
-			layouts.NoColor(eval.RuleName),
+			layouts.NoColor(ruleName),
 			layouts.NoColor(eval.Entity),
 			getColoredEvalStatus(eval.Status),
 			getRemediateStatusColor(eval.RemediationStatus),

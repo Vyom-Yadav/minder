@@ -17,6 +17,7 @@ package engine
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -78,12 +79,28 @@ func (e *Executor) createEvalStatusParams(
 		Valid:  true,
 	}
 
+	marshalledRule, err := json.Marshal(params.Rule)
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling rule: %w", err)
+	}
+
+	ruleHashSHA256, err := e.querier.ComputeJSONBHash(ctx, marshalledRule)
+	if err != nil {
+		return nil, fmt.Errorf("error hashing rule: %w", err)
+	}
+
+	ruleHash := sql.NullString{
+		String: string(ruleHashSHA256),
+		Valid:  true,
+	}
+
 	// Get the current rule evaluation from the database
 	evalStatus, err := e.querier.GetRuleEvaluationByProfileIdAndRuleType(ctx,
 		params.ProfileID,
 		entityType,
 		entityID,
 		ruleName,
+		ruleHash,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error getting rule evaluation status from db: %w", err)
@@ -116,6 +133,16 @@ func (e *Executor) createOrUpdateEvalStatus(
 		return nil
 	}
 
+	marshalledRule, err := json.Marshal(params.Rule)
+	if err != nil {
+		return fmt.Errorf("error marshalling rule: %w", err)
+	}
+
+	ruleHashSHA256, err := e.querier.ComputeJSONBHash(ctx, marshalledRule)
+	if err != nil {
+		return fmt.Errorf("error hashing rule: %w", err)
+	}
+
 	// Upsert evaluation
 	id, err := e.querier.UpsertRuleEvaluations(ctx, db.UpsertRuleEvaluationsParams{
 		ProfileID: params.ProfileID,
@@ -127,6 +154,7 @@ func (e *Executor) createOrUpdateEvalStatus(
 		Entity:        params.EntityType,
 		RuleTypeID:    params.RuleTypeID,
 		PullRequestID: params.PullRequestID,
+		RuleHash:      string(ruleHashSHA256),
 	})
 
 	if err != nil {

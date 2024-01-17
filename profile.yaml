@@ -1,0 +1,18 @@
+version: v1
+type: profile
+name: Not-Vyom-github-profile
+context:
+  provider: github
+alert: "on"
+remediate: "on"
+repository:
+  - type: dependabot_configured
+    def:
+      package_ecosystem: gomod
+      schedule_interval: daily
+      apply_if_file: go.mod
+  - type: dependabot_configured
+    def:
+      package_ecosystem: npm
+      schedule_interval: daily
+      apply_if_file: docs/package.json
