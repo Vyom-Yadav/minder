@@ -100,6 +100,7 @@ type Querier interface {
 	// with entity_profile_rules. The rule_type_id is used to filter the results. Note that we only really care about the overal profile,
 	// so we only return the profile information. We also should group the profiles so that we don't get duplicates.
 	ListProfilesInstantiatingRuleType(ctx context.Context, ruleTypeID uuid.UUID) ([]ListProfilesInstantiatingRuleTypeRow, error)
+	ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error)
 	// ListProvidersByProjectID allows us to lits all providers for a given project.
 	ListProvidersByProjectID(ctx context.Context, projectID uuid.UUID) ([]Provider, error)
 	// ListProvidersByProjectIDPaginated allows us to lits all providers for a given project

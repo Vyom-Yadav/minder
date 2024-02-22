@@ -31,7 +31,7 @@ WHERE name = $1 AND is_organization = FALSE LIMIT 1;
 
 -- name: GetParentProjects :many
 WITH RECURSIVE get_parents AS (
-    SELECT id, parent_id, created_at FROM projects 
+    SELECT id, parent_id, created_at FROM projects
     WHERE projects.id = $1
 
     UNION
@@ -46,7 +46,7 @@ SELECT id FROM get_parents;
 
 -- name: GetParentProjectsUntil :many
 WITH RECURSIVE get_parents_until AS (
-    SELECT id, parent_id, created_at FROM projects 
+    SELECT id, parent_id, created_at FROM projects
     WHERE projects.id = $1
 
     UNION
@@ -62,7 +62,7 @@ SELECT id FROM get_parents_until;
 
 -- name: GetChildrenProjects :many
 WITH RECURSIVE get_children AS (
-    SELECT projects.id, projects.name, projects.metadata, projects.parent_id, projects.created_at, projects.updated_at FROM projects 
+    SELECT projects.id, projects.name, projects.metadata, projects.parent_id, projects.created_at, projects.updated_at FROM projects
     WHERE projects.id = $1
 
     UNION
@@ -89,3 +89,16 @@ WITH RECURSIVE get_children AS (
 DELETE FROM projects
 WHERE id IN (SELECT id FROM get_children)
 RETURNING id, name, metadata, created_at, updated_at, parent_id;
+
+-- name: ListProjects :many
+SELECT *
+FROM projects
+WHERE (
+        (created_at > sqlc.narg('created_at') OR sqlc.narg('created_at') IS NULL)
+          OR (created_at = sqlc.narg('created_at') AND
+              (id >= sqlc.narg('id') OR sqlc.narg('id') IS NULL)
+          )
+        )
+ORDER BY created_at,
+         id
+LIMIT sqlc.narg('limit');

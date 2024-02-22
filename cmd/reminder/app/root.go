@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Stacklok, Inc.
+// Copyright 2024 Stacklok, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,49 +17,45 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/stacklok/minder/internal/auth"
 	"github.com/stacklok/minder/internal/config"
-	serverconfig "github.com/stacklok/minder/internal/config/server"
+	reminderconfig "github.com/stacklok/minder/internal/config/reminder"
 	"github.com/stacklok/minder/internal/util/cli"
 )
 
 var (
 	// RootCmd represents the base command when called without any subcommands
 	RootCmd = &cobra.Command{
-		Use:   "minder-server",
-		Short: "Minder control plane server",
-		Long:  ``,
+		Use:   "re-minder",
+		Short: "Re-Minder process for sending reminders to minder server",
+		Long:  `re-minder sends reminders to the minder server to process entities in background.`,
 	}
 )
 
+const configFileName = "reminder-config.yaml"
+
 // Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	RootCmd.SetOut(os.Stdout)
 	RootCmd.SetErr(os.Stderr)
-	err := RootCmd.Execute()
+	err := RootCmd.ExecuteContext(context.Background())
 	cli.ExitNicelyOnError(err, "Error executing root command")
 }
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	RootCmd.PersistentFlags().String("config", "", "config file (default is $PWD/server-config.yaml)")
-	if err := config.RegisterDatabaseFlags(viper.GetViper(), RootCmd.PersistentFlags()); err != nil {
-		log.Fatal().Err(err).Msg("Error registering database flags")
-	}
-	if err := auth.RegisterOAuthFlags(viper.GetViper(), RootCmd.PersistentFlags()); err != nil {
-		log.Fatal().Err(err).Msg("Error registering oauth flags")
-	}
-	if err := serverconfig.RegisterIdentityFlags(viper.GetViper(), RootCmd.PersistentFlags()); err != nil {
-		log.Fatal().Err(err).Msg("Error registering identity flags")
+	RootCmd.PersistentFlags().String("config", "", fmt.Sprintf("config file (default is $PWD/%s)", configFileName))
+	if err := reminderconfig.RegisterReminderFlags(viper.GetViper(), RootCmd.PersistentFlags()); err != nil {
+		log.Fatal().Err(err).Msg("Error registering reminder flags")
 	}
 	if err := viper.BindPFlag("config", RootCmd.PersistentFlags().Lookup("config")); err != nil {
 		RootCmd.Printf("error: %s", err)
@@ -68,10 +64,8 @@ func init() {
 }
 
 func initConfig() {
-	serverconfig.SetViperDefaults(viper.GetViper())
-
 	cfgFile := viper.GetString("config")
-	cfgFileData, err := config.GetConfigFileData(cfgFile, filepath.Join(".", "server-config.yaml"))
+	cfgFileData, err := config.GetConfigFileData(cfgFile, filepath.Join(".", configFileName))
 	if err != nil {
 		RootCmd.PrintErrln(err)
 		os.Exit(1)
@@ -86,11 +80,24 @@ func initConfig() {
 		os.Exit(1)
 	}
 
+	// TODO: Test Whether this works or not, is this ok?
+	cfg, ok := cfgFileData.(*reminderconfig.Config)
+	if !ok {
+		RootCmd.Printf("invalid config type: %T\n", cfgFileData)
+		os.Exit(1)
+	}
+
+	err = reminderconfig.ValidateConfig(cfg)
+	if err != nil {
+		RootCmd.PrintErrln(err)
+		os.Exit(1)
+	}
+
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
 		// use defaults
-		viper.SetConfigName("server-config")
+		viper.SetConfigName(strings.TrimSuffix(configFileName, filepath.Ext(configFileName)))
 		viper.AddConfigPath(".")
 	}
 	viper.SetConfigType("yaml")

@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"time"
 
@@ -138,7 +139,7 @@ func (q *Queries) DeleteProject(ctx context.Context, id uuid.UUID) ([]DeleteProj
 
 const getChildrenProjects = `-- name: GetChildrenProjects :many
 WITH RECURSIVE get_children AS (
-    SELECT projects.id, projects.name, projects.metadata, projects.parent_id, projects.created_at, projects.updated_at FROM projects 
+    SELECT projects.id, projects.name, projects.metadata, projects.parent_id, projects.created_at, projects.updated_at FROM projects
     WHERE projects.id = $1
 
     UNION
@@ -193,7 +194,7 @@ func (q *Queries) GetChildrenProjects(ctx context.Context, id uuid.UUID) ([]GetC
 
 const getParentProjects = `-- name: GetParentProjects :many
 WITH RECURSIVE get_parents AS (
-    SELECT id, parent_id, created_at FROM projects 
+    SELECT id, parent_id, created_at FROM projects
     WHERE projects.id = $1
 
     UNION
@@ -232,7 +233,7 @@ func (q *Queries) GetParentProjects(ctx context.Context, id uuid.UUID) ([]uuid.U
 
 const getParentProjectsUntil = `-- name: GetParentProjectsUntil :many
 WITH RECURSIVE get_parents_until AS (
-    SELECT id, parent_id, created_at FROM projects 
+    SELECT id, parent_id, created_at FROM projects
     WHERE projects.id = $1
 
     UNION
@@ -322,6 +323,57 @@ WHERE parent_id IS NULL
 
 func (q *Queries) GetRootProjects(ctx context.Context) ([]Project, error) {
 	rows, err := q.db.QueryContext(ctx, getRootProjects)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Project{}
+	for rows.Next() {
+		var i Project
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.IsOrganization,
+			&i.Metadata,
+			&i.ParentID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listProjects = `-- name: ListProjects :many
+SELECT id, name, is_organization, metadata, parent_id, created_at, updated_at
+FROM projects
+WHERE (
+        (created_at > $1 OR $1 IS NULL)
+          OR (created_at = $1 AND
+              (id >= $2 OR $2 IS NULL)
+          )
+        )
+ORDER BY created_at,
+         id
+LIMIT $3
+`
+
+type ListProjectsParams struct {
+	CreatedAt sql.NullTime  `json:"created_at"`
+	ID        uuid.NullUUID `json:"id"`
+	Limit     sql.NullInt32 `json:"limit"`
+}
+
+func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error) {
+	rows, err := q.db.QueryContext(ctx, listProjects, arg.CreatedAt, arg.ID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}

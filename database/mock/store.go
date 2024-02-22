@@ -1310,6 +1310,21 @@ func (mr *MockStoreMockRecorder) ListProfilesInstantiatingRuleType(arg0, arg1 in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListProfilesInstantiatingRuleType", reflect.TypeOf((*MockStore)(nil).ListProfilesInstantiatingRuleType), arg0, arg1)
 }
 
+// ListProjects mocks base method.
+func (m *MockStore) ListProjects(arg0 context.Context, arg1 db.ListProjectsParams) ([]db.Project, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListProjects", arg0, arg1)
+	ret0, _ := ret[0].([]db.Project)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListProjects indicates an expected call of ListProjects.
+func (mr *MockStoreMockRecorder) ListProjects(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListProjects", reflect.TypeOf((*MockStore)(nil).ListProjects), arg0, arg1)
+}
+
 // ListProvidersByProjectID mocks base method.
 func (m *MockStore) ListProvidersByProjectID(arg0 context.Context, arg1 uuid.UUID) ([]db.Provider, error) {
 	m.ctrl.T.Helper()
