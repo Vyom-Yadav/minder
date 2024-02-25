@@ -21,11 +21,9 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"github.com/stacklok/minder/internal/db"
 	"github.com/stacklok/minder/internal/engine"
 	"github.com/stacklok/minder/internal/logger"
@@ -35,6 +33,9 @@ import (
 	"github.com/stacklok/minder/internal/util"
 	cursorutil "github.com/stacklok/minder/internal/util/cursor"
 	pb "github.com/stacklok/minder/pkg/api/protobuf/go/minder/v1"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // maxFetchLimit is the maximum number of repositories that can be fetched from the database in one call
@@ -167,13 +168,13 @@ func (s *Server) ListRepositories(ctx context.Context,
 		repoId = sql.NullInt32{Valid: true, Int32: reqRepoCursor.RepoId}
 	}
 
-	limit := sql.NullInt32{Valid: false, Int32: 0}
+	limit := sql.NullInt64{Valid: false, Int64: 0}
 	reqLimit := in.GetLimit()
 	if reqLimit > 0 {
 		if reqLimit > maxFetchLimit {
 			return nil, util.UserVisibleError(codes.InvalidArgument, "limit too high, max is %d", maxFetchLimit)
 		}
-		limit = sql.NullInt32{Valid: true, Int32: reqLimit + 1}
+		limit = sql.NullInt64{Valid: true, Int64: reqLimit + 1}
 	}
 
 	repos, err := s.store.ListRepositoriesByProjectID(ctx, db.ListRepositoriesByProjectIDParams{
@@ -203,7 +204,7 @@ func (s *Server) ListRepositories(ctx context.Context,
 	}
 
 	var respRepoCursor *cursorutil.RepoCursor
-	if limit.Valid && len(repos) == int(limit.Int32) {
+	if limit.Valid && int64(len(repos)) == limit.Int64 {
 		lastRepo := repos[len(repos)-1]
 		respRepoCursor = &cursorutil.RepoCursor{
 			ProjectId: projectID.String(),
@@ -298,6 +299,37 @@ func (s *Server) GetRepositoryByName(ctx context.Context,
 	logger.BusinessRecord(ctx).Repository = repo.ID
 
 	return &pb.GetRepositoryByNameResponse{Repository: r}, nil
+}
+
+func (s *Server) ListOldestRuleEvaluationByIds(ctx context.Context,
+	in *pb.ListOldestRuleEvaluationByIdsRequest) (
+	*pb.ListOldestRuleEvaluationByIdsResponse, error,
+) {
+	repoIds := make([]uuid.UUID, len(in.GetRepositoryIds()))
+	for i, inRepoId := range in.GetRepositoryIds() {
+		parsedRepositoryID, err := uuid.Parse(inRepoId)
+		if err != nil {
+			return nil, util.UserVisibleError(codes.InvalidArgument, "invalid repository ID")
+		}
+		repoIds[i] = parsedRepositoryID
+	}
+
+	oldestRuleEvals, err := s.store.ListOldestRuleEvaluationsByRepositoryId(ctx, repoIds)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := make([]*pb.ListOldestRuleEvaluationByIdsResponse_RepositoryRuleEvaluation,
+		len(oldestRuleEvals))
+
+	for i, oldestRuleEval := range oldestRuleEvals {
+		resp[i] = &pb.ListOldestRuleEvaluationByIdsResponse_RepositoryRuleEvaluation{
+			RepositoryId:         oldestRuleEval.RepositoryID.String(),
+			OldestRuleEvaluation: timestamppb.New(oldestRuleEval.OldestLastUpdated),
+		}
+	}
+
+	return &pb.ListOldestRuleEvaluationByIdsResponse{RepositoryRuleEvaluations: resp}, nil
 }
 
 // DeleteRepositoryById deletes a repository by name

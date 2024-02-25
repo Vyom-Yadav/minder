@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // cursorDelimiter is the delimiter used to encode/decode cursors
@@ -115,4 +117,54 @@ func (c *ProviderCursor) String() string {
 		return ""
 	}
 	return EncodeValue(c.CreatedAt.Format(time.RFC3339Nano))
+}
+
+// ProjectCursor is a cursor for listing projects
+type ProjectCursor struct {
+	// Id is the id of the project
+	Id uuid.UUID
+
+	// CreatedAt is the creation time of the project
+	CreatedAt time.Time
+}
+
+// NewProjectCursor creates a new ProjectCursor from an encoded cursor
+func NewProjectCursor(encodedCursor string) (*ProjectCursor, error) {
+	if encodedCursor == "" {
+		return &ProjectCursor{}, nil
+	}
+
+	cursor, err := DecodeValue(encodedCursor)
+	if err != nil {
+		return nil, err
+	}
+
+	parts := strings.Split(cursor, cursorDelimiter)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid cursor: %s", encodedCursor)
+	}
+
+	id, err := uuid.Parse(parts[0])
+	if err != nil {
+		return nil, err
+	}
+
+	// parse time with as much precision as possible
+	creationTime, err := time.Parse(time.RFC3339Nano, parts[1])
+	if err != nil {
+		return nil, err
+	}
+
+	return &ProjectCursor{
+		Id:        id,
+		CreatedAt: creationTime,
+	}, nil
+}
+
+func (c *ProjectCursor) String() string {
+	if c == nil {
+		return ""
+	}
+	key := strings.Join([]string{c.Id.String(), c.CreatedAt.Format(time.RFC3339Nano)}, cursorDelimiter)
+	return EncodeValue(key)
 }

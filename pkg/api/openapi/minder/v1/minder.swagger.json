@@ -28,6 +28,12 @@
     },
     {
       "name": "ProvidersService"
+    },
+    {
+      "name": "ReconciliationService"
+    },
+    {
+      "name": "ProjectService"
     }
   ],
   "consumes": [
@@ -1223,6 +1229,43 @@
         ]
       }
     },
+    "/api/v1/projects": {
+      "get": {
+        "operationId": "ProjectService_ListProjects",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListProjectResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ProjectService"
+        ]
+      }
+    },
     "/api/v1/providers": {
       "get": {
         "operationId": "ProvidersService_ListProviders",
@@ -1282,6 +1325,38 @@
         ]
       }
     },
+    "/api/v1/reconciliation/repository": {
+      "post": {
+        "operationId": "ReconciliationService_CreateRepositoryReconciliationTask",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateRepositoryReconciliationTaskResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateRepositoryReconciliationTaskRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ReconciliationService"
+        ]
+      }
+    },
     "/api/v1/repositories": {
       "get": {
         "operationId": "RepositoryService_ListRepositories2",
@@ -1310,8 +1385,8 @@
             "name": "limit",
             "in": "query",
             "required": false,
-            "type": "integer",
-            "format": "int32"
+            "type": "string",
+            "format": "int64"
           },
           {
             "name": "context.provider",
@@ -1338,6 +1413,41 @@
             "in": "query",
             "required": false,
             "type": "string"
+          }
+        ],
+        "tags": [
+          "RepositoryService"
+        ]
+      }
+    },
+    "/api/v1/repositories/oldest_rule_evaluation": {
+      "get": {
+        "summary": "grpc-gateway doesn't support body in GET requests, so the request is sent with query parameters :(",
+        "operationId": "RepositoryService_ListOldestRuleEvaluationByIds",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListOldestRuleEvaluationByIdsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "repositoryIds",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
           }
         ],
         "tags": [
@@ -1373,8 +1483,8 @@
             "name": "limit",
             "in": "query",
             "required": false,
-            "type": "integer",
-            "format": "int32"
+            "type": "string",
+            "format": "int64"
           },
           {
             "name": "context.provider",
@@ -2452,6 +2562,18 @@
         }
       }
     },
+    "ListOldestRuleEvaluationByIdsResponseRepositoryRuleEvaluation": {
+      "type": "object",
+      "properties": {
+        "repositoryId": {
+          "type": "string"
+        },
+        "oldestRuleEvaluation": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
     "OAuthServiceStoreProviderTokenBody": {
       "type": "object",
       "properties": {
@@ -2805,6 +2927,26 @@
         }
       }
     },
+    "v1CreateRepositoryReconciliationTaskRequest": {
+      "type": "object",
+      "properties": {
+        "repositoryId": {
+          "type": "string",
+          "format": "int64"
+        },
+        "context": {
+          "$ref": "#/definitions/v1Context"
+        }
+      }
+    },
+    "v1CreateRepositoryReconciliationTaskResponse": {
+      "type": "object",
+      "properties": {
+        "taskId": {
+          "type": "string"
+        }
+      }
+    },
     "v1CreateRuleTypeRequest": {
       "type": "object",
       "properties": {
@@ -3069,6 +3211,18 @@
         }
       }
     },
+    "v1ListOldestRuleEvaluationByIdsResponse": {
+      "type": "object",
+      "properties": {
+        "repositoryRuleEvaluations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ListOldestRuleEvaluationByIdsResponseRepositoryRuleEvaluation"
+          }
+        }
+      }
+    },
     "v1ListProfilesResponse": {
       "type": "object",
       "properties": {
@@ -3078,6 +3232,22 @@
             "type": "object",
             "$ref": "#/definitions/v1Profile"
           }
+        }
+      }
+    },
+    "v1ListProjectResponse": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Project"
+          }
+        },
+        "cursor": {
+          "type": "string",
+          "title": "cursor is the cursor to use for the next page of results, empty if at the end"
         }
       }
     },

@@ -85,6 +85,16 @@ replies with OK
 | DeleteRuleType | [DeleteRuleTypeRequest](#minder-v1-DeleteRuleTypeRequest) | [DeleteRuleTypeResponse](#minder-v1-DeleteRuleTypeResponse) |  |
 
 
+<a name="minder-v1-ProjectService"></a>
+
+#### ProjectService
+Project Service
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListProjects | [ListProjectsRequest](#minder-v1-ListProjectsRequest) | [ListProjectResponse](#minder-v1-ListProjectResponse) |  |
+
+
 <a name="minder-v1-ProvidersService"></a>
 
 #### ProvidersService
@@ -93,6 +103,16 @@ replies with OK
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | ListProviders | [ListProvidersRequest](#minder-v1-ListProvidersRequest) | [ListProvidersResponse](#minder-v1-ListProvidersResponse) |  |
+
+
+<a name="minder-v1-ReconciliationService"></a>
+
+#### ReconciliationService
+Reconcialiation Service
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| CreateRepositoryReconciliationTask | [CreateRepositoryReconciliationTaskRequest](#minder-v1-CreateRepositoryReconciliationTaskRequest) | [CreateRepositoryReconciliationTaskResponse](#minder-v1-CreateRepositoryReconciliationTaskResponse) |  |
 
 
 <a name="minder-v1-RepositoryService"></a>
@@ -107,6 +127,7 @@ replies with OK
 | ListRepositories | [ListRepositoriesRequest](#minder-v1-ListRepositoriesRequest) | [ListRepositoriesResponse](#minder-v1-ListRepositoriesResponse) |  |
 | GetRepositoryById | [GetRepositoryByIdRequest](#minder-v1-GetRepositoryByIdRequest) | [GetRepositoryByIdResponse](#minder-v1-GetRepositoryByIdResponse) |  |
 | GetRepositoryByName | [GetRepositoryByNameRequest](#minder-v1-GetRepositoryByNameRequest) | [GetRepositoryByNameResponse](#minder-v1-GetRepositoryByNameResponse) |  |
+| ListOldestRuleEvaluationByIds | [ListOldestRuleEvaluationByIdsRequest](#minder-v1-ListOldestRuleEvaluationByIdsRequest) | [ListOldestRuleEvaluationByIdsResponse](#minder-v1-ListOldestRuleEvaluationByIdsResponse) | grpc-gateway doesn't support body in GET requests, so the request is sent with query parameters :( |
 | DeleteRepositoryById | [DeleteRepositoryByIdRequest](#minder-v1-DeleteRepositoryByIdRequest) | [DeleteRepositoryByIdResponse](#minder-v1-DeleteRepositoryByIdResponse) |  |
 | DeleteRepositoryByName | [DeleteRepositoryByNameRequest](#minder-v1-DeleteRepositoryByNameRequest) | [DeleteRepositoryByNameResponse](#minder-v1-DeleteRepositoryByNameResponse) |  |
 
@@ -263,6 +284,29 @@ Profile service
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | profile | [Profile](#minder-v1-Profile) |  |  |
+
+
+<a name="minder-v1-CreateRepositoryReconciliationTaskRequest"></a>
+
+#### CreateRepositoryReconciliationTaskRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| repository_id | [int64](#int64) |  |  |
+| context | [Context](#minder-v1-Context) |  |  |
+
+
+<a name="minder-v1-CreateRepositoryReconciliationTaskResponse"></a>
+
+#### CreateRepositoryReconciliationTaskResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| task_id | [string](#string) |  |  |
 
 
 <a name="minder-v1-CreateRuleTypeRequest"></a>
@@ -784,6 +828,40 @@ GitType defines the git data ingester.
 | results | [Artifact](#minder-v1-Artifact) | repeated |  |
 
 
+<a name="minder-v1-ListOldestRuleEvaluationByIdsRequest"></a>
+
+#### ListOldestRuleEvaluationByIdsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| repository_ids | [string](#string) | repeated |  |
+
+
+<a name="minder-v1-ListOldestRuleEvaluationByIdsResponse"></a>
+
+#### ListOldestRuleEvaluationByIdsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| repository_rule_evaluations | [ListOldestRuleEvaluationByIdsResponse.RepositoryRuleEvaluation](#minder-v1-ListOldestRuleEvaluationByIdsResponse-RepositoryRuleEvaluation) | repeated |  |
+
+
+<a name="minder-v1-ListOldestRuleEvaluationByIdsResponse-RepositoryRuleEvaluation"></a>
+
+#### ListOldestRuleEvaluationByIdsResponse.RepositoryRuleEvaluation
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| repository_id | [string](#string) |  |  |
+| oldest_rule_evaluation | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
 <a name="minder-v1-ListProfilesRequest"></a>
 
 #### ListProfilesRequest
@@ -804,6 +882,30 @@ list profiles
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | profiles | [Profile](#minder-v1-Profile) | repeated |  |
+
+
+<a name="minder-v1-ListProjectResponse"></a>
+
+#### ListProjectResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| results | [Project](#minder-v1-Project) | repeated |  |
+| cursor | [string](#string) |  | cursor is the cursor to use for the next page of results, empty if at the end |
+
+
+<a name="minder-v1-ListProjectsRequest"></a>
+
+#### ListProjectsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| limit | [int64](#int64) |  |  |
+| cursor | [string](#string) |  |  |
 
 
 <a name="minder-v1-ListProvidersRequest"></a>
@@ -863,7 +965,7 @@ list profiles
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | provider | [string](#string) |  | **Deprecated.**  |
-| limit | [int32](#int32) |  |  |
+| limit | [int64](#int64) |  |  |
 | context | [Context](#minder-v1-Context) |  |  |
 | cursor | [string](#string) |  |  |
 
@@ -1769,6 +1871,8 @@ ProviderType is the type of the provider.
 | RELATION_PROFILE_DELETE | 32 |  |
 | RELATION_PROFILE_STATUS_GET | 33 |  |
 | RELATION_REMOTE_REPO_GET | 34 |  |
+| RELATION_REPO_RECONCILE_TASK_CREATE | 35 |  |
+| RELATION_PROJECT_LIST | 36 |  |
 
 
 <a name="minder-v1-TargetResource"></a>

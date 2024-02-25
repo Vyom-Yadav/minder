@@ -67,6 +67,8 @@ enum Relation {
     RELATION_PROFILE_DELETE = 32 [(name) = "profile_delete"];
     RELATION_PROFILE_STATUS_GET = 33 [(name) = "profile_status_get"];
     RELATION_REMOTE_REPO_GET = 34 [(name) = "remote_repo_get"];
+    RELATION_REPO_RECONCILE_TASK_CREATE = 35 [(name) = "repo_reconcile_task_create"];
+    RELATION_PROJECT_LIST = 36 [(name) = "project_list"];
 }
 
 extend google.protobuf.EnumValueOptions {
@@ -385,6 +387,18 @@ service RepositoryService {
         };
     }
 
+    // grpc-gateway doesn't support body in GET requests, so the request is sent with query parameters :(
+    rpc ListOldestRuleEvaluationByIds(ListOldestRuleEvaluationByIdsRequest) returns (ListOldestRuleEvaluationByIdsResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/repositories/oldest_rule_evaluation"
+        };
+
+        option (rpc_options) = {
+            target_resource: TARGET_RESOURCE_PROJECT
+            relation: RELATION_REPO_GET
+        };
+    }
+
     rpc DeleteRepositoryById (DeleteRepositoryByIdRequest) returns (DeleteRepositoryByIdResponse) {
         option (google.api.http) = {
             delete: "/api/v1/repository/id/{repository_id}"
@@ -656,6 +670,35 @@ service ProvidersService {
     }
 }
 
+// Reconcialiation Service
+service ReconciliationService {
+    rpc CreateRepositoryReconciliationTask (CreateRepositoryReconciliationTaskRequest) returns (CreateRepositoryReconciliationTaskResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/reconciliation/repository"
+            body: "*"
+        };
+
+        option (rpc_options) = {
+            target_resource: TARGET_RESOURCE_PROJECT
+            relation: RELATION_REPO_RECONCILE_TASK_CREATE
+        };
+    }
+}
+
+// Project Service
+service ProjectService {
+    rpc ListProjects (ListProjectsRequest) returns (ListProjectResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/projects"
+        };
+
+        option (rpc_options) = {
+            target_resource: TARGET_RESOURCE_PROJECT
+            relation: RELATION_PROJECT_LIST
+        };
+    }
+}
+
 message CheckHealthRequest {
 }
 
@@ -705,6 +748,29 @@ message Project {
     string description = 4;
     google.protobuf.Timestamp created_at = 6;
     google.protobuf.Timestamp updated_at = 7;
+}
+
+message ListProjectsRequest {
+    int64 limit = 1;
+    string cursor = 2;
+}
+
+message ListProjectResponse {
+    repeated Project results = 1;
+
+    // cursor is the cursor to use for the next page of results, empty if at the end
+    string cursor = 2;
+}
+
+// Reconcialiation API Objects
+
+message CreateRepositoryReconciliationTaskRequest {
+    int64 repository_id = 1;
+    Context context = 2;
+}
+
+message CreateRepositoryReconciliationTaskResponse {
+    string task_id = 1;
 }
 
 // Repositories API objects
@@ -774,6 +840,19 @@ message GetRepositoryByIdRequest {
     Context context = 2;
 }
 
+message ListOldestRuleEvaluationByIdsRequest {
+    repeated string repository_ids = 1;
+}
+
+message ListOldestRuleEvaluationByIdsResponse {
+    message RepositoryRuleEvaluation {
+        string repository_id = 1;
+        google.protobuf.Timestamp oldest_rule_evaluation = 2;
+    }
+
+    repeated RepositoryRuleEvaluation repository_rule_evaluations = 1;
+}
+
 message GetRepositoryByIdResponse {
     Repository repository = 1;
 }
@@ -813,7 +892,7 @@ message DeleteRepositoryByNameResponse {
 
 message ListRepositoriesRequest {
     string provider = 1 [deprecated=true];
-    int32 limit = 3;
+    int64 limit = 3;
     Context context = 5;
     string cursor = 6;
 

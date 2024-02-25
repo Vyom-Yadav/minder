@@ -499,6 +499,7 @@ const (
 	RepositoryService_ListRepositories_FullMethodName                   = "/minder.v1.RepositoryService/ListRepositories"
 	RepositoryService_GetRepositoryById_FullMethodName                  = "/minder.v1.RepositoryService/GetRepositoryById"
 	RepositoryService_GetRepositoryByName_FullMethodName                = "/minder.v1.RepositoryService/GetRepositoryByName"
+	RepositoryService_ListOldestRuleEvaluationByIds_FullMethodName      = "/minder.v1.RepositoryService/ListOldestRuleEvaluationByIds"
 	RepositoryService_DeleteRepositoryById_FullMethodName               = "/minder.v1.RepositoryService/DeleteRepositoryById"
 	RepositoryService_DeleteRepositoryByName_FullMethodName             = "/minder.v1.RepositoryService/DeleteRepositoryByName"
 )
@@ -512,6 +513,8 @@ type RepositoryServiceClient interface {
 	ListRepositories(ctx context.Context, in *ListRepositoriesRequest, opts ...grpc.CallOption) (*ListRepositoriesResponse, error)
 	GetRepositoryById(ctx context.Context, in *GetRepositoryByIdRequest, opts ...grpc.CallOption) (*GetRepositoryByIdResponse, error)
 	GetRepositoryByName(ctx context.Context, in *GetRepositoryByNameRequest, opts ...grpc.CallOption) (*GetRepositoryByNameResponse, error)
+	// grpc-gateway doesn't support body in GET requests, so the request is sent with query parameters :(
+	ListOldestRuleEvaluationByIds(ctx context.Context, in *ListOldestRuleEvaluationByIdsRequest, opts ...grpc.CallOption) (*ListOldestRuleEvaluationByIdsResponse, error)
 	DeleteRepositoryById(ctx context.Context, in *DeleteRepositoryByIdRequest, opts ...grpc.CallOption) (*DeleteRepositoryByIdResponse, error)
 	DeleteRepositoryByName(ctx context.Context, in *DeleteRepositoryByNameRequest, opts ...grpc.CallOption) (*DeleteRepositoryByNameResponse, error)
 }
@@ -569,6 +572,15 @@ func (c *repositoryServiceClient) GetRepositoryByName(ctx context.Context, in *G
 	return out, nil
 }
 
+func (c *repositoryServiceClient) ListOldestRuleEvaluationByIds(ctx context.Context, in *ListOldestRuleEvaluationByIdsRequest, opts ...grpc.CallOption) (*ListOldestRuleEvaluationByIdsResponse, error) {
+	out := new(ListOldestRuleEvaluationByIdsResponse)
+	err := c.cc.Invoke(ctx, RepositoryService_ListOldestRuleEvaluationByIds_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *repositoryServiceClient) DeleteRepositoryById(ctx context.Context, in *DeleteRepositoryByIdRequest, opts ...grpc.CallOption) (*DeleteRepositoryByIdResponse, error) {
 	out := new(DeleteRepositoryByIdResponse)
 	err := c.cc.Invoke(ctx, RepositoryService_DeleteRepositoryById_FullMethodName, in, out, opts...)
@@ -596,6 +608,8 @@ type RepositoryServiceServer interface {
 	ListRepositories(context.Context, *ListRepositoriesRequest) (*ListRepositoriesResponse, error)
 	GetRepositoryById(context.Context, *GetRepositoryByIdRequest) (*GetRepositoryByIdResponse, error)
 	GetRepositoryByName(context.Context, *GetRepositoryByNameRequest) (*GetRepositoryByNameResponse, error)
+	// grpc-gateway doesn't support body in GET requests, so the request is sent with query parameters :(
+	ListOldestRuleEvaluationByIds(context.Context, *ListOldestRuleEvaluationByIdsRequest) (*ListOldestRuleEvaluationByIdsResponse, error)
 	DeleteRepositoryById(context.Context, *DeleteRepositoryByIdRequest) (*DeleteRepositoryByIdResponse, error)
 	DeleteRepositoryByName(context.Context, *DeleteRepositoryByNameRequest) (*DeleteRepositoryByNameResponse, error)
 	mustEmbedUnimplementedRepositoryServiceServer()
@@ -619,6 +633,9 @@ func (UnimplementedRepositoryServiceServer) GetRepositoryById(context.Context, *
 }
 func (UnimplementedRepositoryServiceServer) GetRepositoryByName(context.Context, *GetRepositoryByNameRequest) (*GetRepositoryByNameResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRepositoryByName not implemented")
+}
+func (UnimplementedRepositoryServiceServer) ListOldestRuleEvaluationByIds(context.Context, *ListOldestRuleEvaluationByIdsRequest) (*ListOldestRuleEvaluationByIdsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListOldestRuleEvaluationByIds not implemented")
 }
 func (UnimplementedRepositoryServiceServer) DeleteRepositoryById(context.Context, *DeleteRepositoryByIdRequest) (*DeleteRepositoryByIdResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRepositoryById not implemented")
@@ -729,6 +746,24 @@ func _RepositoryService_GetRepositoryByName_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RepositoryService_ListOldestRuleEvaluationByIds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOldestRuleEvaluationByIdsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RepositoryServiceServer).ListOldestRuleEvaluationByIds(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RepositoryService_ListOldestRuleEvaluationByIds_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RepositoryServiceServer).ListOldestRuleEvaluationByIds(ctx, req.(*ListOldestRuleEvaluationByIdsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RepositoryService_DeleteRepositoryById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteRepositoryByIdRequest)
 	if err := dec(in); err != nil {
@@ -791,6 +826,10 @@ var RepositoryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRepositoryByName",
 			Handler:    _RepositoryService_GetRepositoryByName_Handler,
+		},
+		{
+			MethodName: "ListOldestRuleEvaluationByIds",
+			Handler:    _RepositoryService_ListOldestRuleEvaluationByIds_Handler,
 		},
 		{
 			MethodName: "DeleteRepositoryById",
@@ -1788,6 +1827,186 @@ var ProvidersService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProviders",
 			Handler:    _ProvidersService_ListProviders_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "minder/v1/minder.proto",
+}
+
+const (
+	ReconciliationService_CreateRepositoryReconciliationTask_FullMethodName = "/minder.v1.ReconciliationService/CreateRepositoryReconciliationTask"
+)
+
+// ReconciliationServiceClient is the client API for ReconciliationService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type ReconciliationServiceClient interface {
+	CreateRepositoryReconciliationTask(ctx context.Context, in *CreateRepositoryReconciliationTaskRequest, opts ...grpc.CallOption) (*CreateRepositoryReconciliationTaskResponse, error)
+}
+
+type reconciliationServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewReconciliationServiceClient(cc grpc.ClientConnInterface) ReconciliationServiceClient {
+	return &reconciliationServiceClient{cc}
+}
+
+func (c *reconciliationServiceClient) CreateRepositoryReconciliationTask(ctx context.Context, in *CreateRepositoryReconciliationTaskRequest, opts ...grpc.CallOption) (*CreateRepositoryReconciliationTaskResponse, error) {
+	out := new(CreateRepositoryReconciliationTaskResponse)
+	err := c.cc.Invoke(ctx, ReconciliationService_CreateRepositoryReconciliationTask_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ReconciliationServiceServer is the server API for ReconciliationService service.
+// All implementations must embed UnimplementedReconciliationServiceServer
+// for forward compatibility
+type ReconciliationServiceServer interface {
+	CreateRepositoryReconciliationTask(context.Context, *CreateRepositoryReconciliationTaskRequest) (*CreateRepositoryReconciliationTaskResponse, error)
+	mustEmbedUnimplementedReconciliationServiceServer()
+}
+
+// UnimplementedReconciliationServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedReconciliationServiceServer struct {
+}
+
+func (UnimplementedReconciliationServiceServer) CreateRepositoryReconciliationTask(context.Context, *CreateRepositoryReconciliationTaskRequest) (*CreateRepositoryReconciliationTaskResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateRepositoryReconciliationTask not implemented")
+}
+func (UnimplementedReconciliationServiceServer) mustEmbedUnimplementedReconciliationServiceServer() {}
+
+// UnsafeReconciliationServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ReconciliationServiceServer will
+// result in compilation errors.
+type UnsafeReconciliationServiceServer interface {
+	mustEmbedUnimplementedReconciliationServiceServer()
+}
+
+func RegisterReconciliationServiceServer(s grpc.ServiceRegistrar, srv ReconciliationServiceServer) {
+	s.RegisterService(&ReconciliationService_ServiceDesc, srv)
+}
+
+func _ReconciliationService_CreateRepositoryReconciliationTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRepositoryReconciliationTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReconciliationServiceServer).CreateRepositoryReconciliationTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReconciliationService_CreateRepositoryReconciliationTask_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReconciliationServiceServer).CreateRepositoryReconciliationTask(ctx, req.(*CreateRepositoryReconciliationTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// ReconciliationService_ServiceDesc is the grpc.ServiceDesc for ReconciliationService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var ReconciliationService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "minder.v1.ReconciliationService",
+	HandlerType: (*ReconciliationServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateRepositoryReconciliationTask",
+			Handler:    _ReconciliationService_CreateRepositoryReconciliationTask_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "minder/v1/minder.proto",
+}
+
+const (
+	ProjectService_ListProjects_FullMethodName = "/minder.v1.ProjectService/ListProjects"
+)
+
+// ProjectServiceClient is the client API for ProjectService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type ProjectServiceClient interface {
+	ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectResponse, error)
+}
+
+type projectServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewProjectServiceClient(cc grpc.ClientConnInterface) ProjectServiceClient {
+	return &projectServiceClient{cc}
+}
+
+func (c *projectServiceClient) ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectResponse, error) {
+	out := new(ListProjectResponse)
+	err := c.cc.Invoke(ctx, ProjectService_ListProjects_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ProjectServiceServer is the server API for ProjectService service.
+// All implementations must embed UnimplementedProjectServiceServer
+// for forward compatibility
+type ProjectServiceServer interface {
+	ListProjects(context.Context, *ListProjectsRequest) (*ListProjectResponse, error)
+	mustEmbedUnimplementedProjectServiceServer()
+}
+
+// UnimplementedProjectServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedProjectServiceServer struct {
+}
+
+func (UnimplementedProjectServiceServer) ListProjects(context.Context, *ListProjectsRequest) (*ListProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjects not implemented")
+}
+func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
+
+// UnsafeProjectServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ProjectServiceServer will
+// result in compilation errors.
+type UnsafeProjectServiceServer interface {
+	mustEmbedUnimplementedProjectServiceServer()
+}
+
+func RegisterProjectServiceServer(s grpc.ServiceRegistrar, srv ProjectServiceServer) {
+	s.RegisterService(&ProjectService_ServiceDesc, srv)
+}
+
+func _ProjectService_ListProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).ListProjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_ListProjects_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).ListProjects(ctx, req.(*ListProjectsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var ProjectService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "minder.v1.ProjectService",
+	HandlerType: (*ProjectServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListProjects",
+			Handler:    _ProjectService_ListProjects_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
