@@ -663,6 +663,47 @@ paths:
           type: string
       tags:
         - ProfileService
+    patch:
+      operationId: ProfileService_PatchProfile
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PatchProfileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/googlerpcStatus'
+      parameters:
+        - name: id
+          description: |-
+            The id of the profile to patch. Same explanation about explicitness
+            as for the context
+          in: path
+          required: true
+          type: string
+        - name: patch
+          description: The patch to apply to the profile
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1Profile'
+        - name: context.provider
+          description: name of the provider
+          in: query
+          required: false
+          type: string
+        - name: context.project
+          description: ID of the project
+          in: query
+          required: false
+          type: string
+        - name: context.retiredOrganization
+          in: query
+          required: false
+          type: string
+      tags:
+        - ProfileService
   /api/v1/profile_status:
     get:
       operationId: ProfileService_GetProfileStatusByProject
@@ -750,6 +791,53 @@ paths:
             $ref: '#/definitions/googlerpcStatus'
       tags:
         - ProjectsService
+    delete:
+      operationId: ProjectsService_DeleteProject
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteProjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/googlerpcStatus'
+      parameters:
+        - name: context.provider
+          description: name of the provider
+          in: query
+          required: false
+          type: string
+        - name: context.project
+          description: ID of the project
+          in: query
+          required: false
+          type: string
+        - name: context.retiredOrganization
+          in: query
+          required: false
+          type: string
+      tags:
+        - ProjectsService
+    post:
+      operationId: ProjectsService_CreateProject
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateProjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/googlerpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1CreateProjectRequest'
+      tags:
+        - ProjectsService
   /api/v1/providers:
     get:
       operationId: ProvidersService_ListProviders
@@ -787,6 +875,40 @@ paths:
           description: >-
             cursor is the cursor to use for the page of results, empty if at the
             beginning
+          in: query
+          required: false
+          type: string
+      tags:
+        - ProvidersService
+  /api/v1/providers/{name}:
+    get:
+      operationId: ProvidersService_GetProvider
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProviderResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/googlerpcStatus'
+      parameters:
+        - name: name
+          description: name is the name of the provider to get.
+          in: path
+          required: true
+          type: string
+        - name: context.provider
+          description: name of the provider
+          in: query
+          required: false
+          type: string
+        - name: context.project
+          description: ID of the project
+          in: query
+          required: false
+          type: string
+        - name: context.retiredOrganization
           in: query
           required: false
           type: string
@@ -1917,6 +2039,15 @@ definitions:
       roleAssignment:
         $ref: '#/definitions/v1RoleAssignment'
         description: role_assignment is the role assignment that was created.
+  v1AuthorizationFlow:
+    type: string
+    enum:
+      - AUTHORIZATION_FLOW_UNSPECIFIED
+      - AUTHORIZATION_FLOW_NONE
+      - AUTHORIZATION_FLOW_USER_INPUT
+      - AUTHORIZATION_FLOW_OAUTH2_AUTHORIZATION_CODE_FLOW
+      - AUTHORIZATION_FLOW_GITHUB_APP_FLOW
+    default: AUTHORIZATION_FLOW_UNSPECIFIED
   v1BuiltinType:
     type: object
     properties:
@@ -1960,6 +2091,21 @@ definitions:
     properties:
       profile:
         $ref: '#/definitions/v1Profile'
+  v1CreateProjectRequest:
+    type: object
+    properties:
+      context:
+        $ref: '#/definitions/v1Context'
+        description: context is the context in which the project is created.
+      name:
+        type: string
+        description: name is the name of the project to create.
+  v1CreateProjectResponse:
+    type: object
+    properties:
+      project:
+        $ref: '#/definitions/v1Project'
+        description: project is the project that was created.
   v1CreateRuleTypeRequest:
     type: object
     properties:
@@ -2000,6 +2146,12 @@ definitions:
         $ref: '#/definitions/v1Context'
   v1DeleteProfileResponse:
     type: object
+  v1DeleteProjectResponse:
+    type: object
+    properties:
+      projectId:
+        type: string
+        description: project_id is the id of the project that was deleted.
   v1DeleteRepositoryByIdResponse:
     type: object
     properties:
@@ -2125,6 +2277,12 @@ definitions:
           type: object
           $ref: '#/definitions/v1ProfileStatus'
         title: profile_status is the status of the profile
+  v1GetProviderResponse:
+    type: object
+    properties:
+      provider:
+        $ref: '#/definitions/v1Provider'
+        description: provider is the provider that was retrieved.
   v1GetRepositoryByIdResponse:
     type: object
     properties:
@@ -2264,6 +2422,11 @@ definitions:
           $ref: '#/definitions/v1RuleType'
         description: rule_types is the list of rule types.
     description: ListRuleTypesResponse is the response to list rule types.
+  v1PatchProfileResponse:
+    type: object
+    properties:
+      profile:
+        $ref: '#/definitions/v1Profile'
   v1Profile:
     type: object
     properties:
@@ -2398,6 +2561,13 @@ definitions:
       config:
         type: object
         description: config is the configuration of the provider.
+      authFlows:
+        type: array
+        items:
+          $ref: '#/definitions/v1AuthorizationFlow'
+        description: >-
+          auth_flows is the list of authorization flows that the provider
+          supports.
   v1ProviderType:
     type: string
     enum:
