@@ -105,9 +105,15 @@ func (c *GitHub) ListAllRepositories(ctx context.Context, isOrg bool, owner stri
 		var err error
 
 		if isOrg {
-			repos, resp, err = c.client.Repositories.ListByOrg(ctx, owner, orgOpt)
+			op := func() ([]*github.Repository, *github.Response, error) {
+				return c.client.Repositories.ListByOrg(ctx, owner, orgOpt)
+			}
+			repos, resp, err = performWithRateLimitCheck(ctx, op, c)
 		} else {
-			repos, resp, err = c.client.Repositories.List(ctx, "", opt)
+			op := func() ([]*github.Repository, *github.Response, error) {
+				return c.client.Repositories.List(ctx, "", opt)
+			}
+			repos, resp, err = performWithRateLimitCheck(ctx, op, c)
 		}
 
 		if err != nil {
@@ -146,9 +152,15 @@ func (c *GitHub) ListPackagesByRepository(ctx context.Context, isOrg bool, owner
 		var err error
 
 		if isOrg {
-			artifacts, resp, err = c.client.Organizations.ListPackages(ctx, owner, opt)
+			op := func() ([]*github.Package, *github.Response, error) {
+				return c.client.Organizations.ListPackages(ctx, owner, opt)
+			}
+			artifacts, resp, err = performWithRateLimitCheck(ctx, op, c)
 		} else {
-			artifacts, resp, err = c.client.Users.ListPackages(ctx, owner, opt)
+			op := func() ([]*github.Package, *github.Response, error) {
+				return c.client.Users.ListPackages(ctx, owner, opt)
+			}
+			artifacts, resp, err = performWithRateLimitCheck(ctx, op, c)
 		}
 		if err != nil {
 			if resp.StatusCode == http.StatusNotFound {
@@ -203,9 +215,15 @@ func (c *GitHub) GetPackageVersions(ctx context.Context, isOrg bool, owner strin
 		var resp *github.Response
 		var err error
 		if isOrg {
-			v, resp, err = c.client.Organizations.PackageGetAllVersions(ctx, owner, package_type, package_name, opt)
+			op := func() ([]*github.PackageVersion, *github.Response, error) {
+				return c.client.Organizations.PackageGetAllVersions(ctx, owner, package_type, package_name, opt)
+			}
+			v, resp, err = performWithRateLimitCheck(ctx, op, c)
 		} else {
-			v, resp, err = c.client.Users.PackageGetAllVersions(ctx, "", package_type, package_name, opt)
+			op := func() ([]*github.PackageVersion, *github.Response, error) {
+				return c.client.Users.PackageGetAllVersions(ctx, "", package_type, package_name, opt)
+			}
+			v, resp, err = performWithRateLimitCheck(ctx, op, c)
 		}
 		if err != nil {
 			return nil, err
@@ -264,12 +282,18 @@ func (c *GitHub) GetPackageByName(ctx context.Context, isOrg bool, owner string,
 
 	package_name = url.PathEscape(package_name)
 	if isOrg {
-		pkg, _, err = c.client.Organizations.GetPackage(ctx, owner, package_type, package_name)
+		op := func() (*github.Package, *github.Response, error) {
+			return c.client.Organizations.GetPackage(ctx, owner, package_type, package_name)
+		}
+		pkg, _, err = performWithRateLimitCheck(ctx, op, c)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		pkg, _, err = c.client.Users.GetPackage(ctx, "", package_type, package_name)
+		op := func() (*github.Package, *github.Response, error) {
+			return c.client.Users.GetPackage(ctx, "", package_type, package_name)
+		}
+		pkg, _, err = performWithRateLimitCheck(ctx, op, c)
 		if err != nil {
 			return nil, err
 		}
@@ -292,12 +316,18 @@ func (c *GitHub) GetPackageVersionById(
 	packageName = url.PathEscape(packageName)
 
 	if isOrg {
-		pkgVersion, _, err = c.client.Organizations.PackageGetVersion(ctx, owner, packageType, packageName, version)
+		op := func() (*github.PackageVersion, *github.Response, error) {
+			return c.client.Organizations.PackageGetVersion(ctx, owner, packageType, packageName, version)
+		}
+		pkgVersion, _, err = performWithRateLimitCheck(ctx, op, c)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		pkgVersion, _, err = c.client.Users.PackageGetVersion(ctx, owner, packageType, packageName, version)
+		op := func() (*github.PackageVersion, *github.Response, error) {
+			return c.client.Users.PackageGetVersion(ctx, owner, packageType, packageName, version)
+		}
+		pkgVersion, _, err = performWithRateLimitCheck(ctx, op, c)
 		if err != nil {
 			return nil, err
 		}
@@ -313,7 +343,10 @@ func (c *GitHub) GetPullRequest(
 	repo string,
 	number int,
 ) (*github.PullRequest, error) {
-	pr, _, err := c.client.PullRequests.Get(ctx, owner, repo, number)
+	op := func() (*github.PullRequest, *github.Response, error) {
+		return c.client.PullRequests.Get(ctx, owner, repo, number)
+	}
+	pr, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return nil, err
 	}
@@ -329,43 +362,24 @@ func (c *GitHub) ListFiles(
 	perPage int,
 	pageNumber int,
 ) ([]*github.CommitFile, *github.Response, error) {
-	type listFilesRespWrapper struct {
-		files []*github.CommitFile
-		resp  *github.Response
+	opt := &github.ListOptions{
+		Page:    pageNumber,
+		PerPage: perPage,
 	}
-
-	op := func() (listFilesRespWrapper, error) {
-		opt := &github.ListOptions{
-			Page:    pageNumber,
-			PerPage: perPage,
-		}
-		files, resp, err := c.client.PullRequests.ListFiles(ctx, owner, repo, prNumber, opt)
-
-		listFileResp := listFilesRespWrapper{
-			files: files,
-			resp:  resp,
-		}
-
-		if isRateLimitError(err) {
-			waitErr := c.waitForRateLimitReset(ctx, err)
-			if waitErr == nil {
-				return listFileResp, err
-			}
-			return listFileResp, backoffv4.Permanent(err)
-		}
-
-		return listFileResp, backoffv4.Permanent(err)
+	op := func() ([]*github.CommitFile, *github.Response, error) {
+		return c.client.PullRequests.ListFiles(ctx, owner, repo, prNumber, opt)
 	}
-
-	resp, err := performWithRetry(ctx, op)
-	return resp.files, resp.resp, err
+	return performWithRateLimitCheck(ctx, op, c)
 }
 
 // CreateReview is a wrapper for the GitHub API to create a review
 func (c *GitHub) CreateReview(
 	ctx context.Context, owner, repo string, number int, reviewRequest *github.PullRequestReviewRequest,
 ) (*github.PullRequestReview, error) {
-	review, _, err := c.client.PullRequests.CreateReview(ctx, owner, repo, number, reviewRequest)
+	op := func() (*github.PullRequestReview, *github.Response, error) {
+		return c.client.PullRequests.CreateReview(ctx, owner, repo, number, reviewRequest)
+	}
+	review, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return nil, fmt.Errorf("error creating review: %w", err)
 	}
@@ -376,7 +390,10 @@ func (c *GitHub) CreateReview(
 func (c *GitHub) UpdateReview(
 	ctx context.Context, owner, repo string, number int, reviewId int64, body string,
 ) (*github.PullRequestReview, error) {
-	review, _, err := c.client.PullRequests.UpdateReview(ctx, owner, repo, number, reviewId, body)
+	op := func() (*github.PullRequestReview, *github.Response, error) {
+		return c.client.PullRequests.UpdateReview(ctx, owner, repo, number, reviewId, body)
+	}
+	review, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return nil, fmt.Errorf("error updating review: %w", err)
 	}
@@ -387,7 +404,10 @@ func (c *GitHub) UpdateReview(
 func (c *GitHub) ListIssueComments(
 	ctx context.Context, owner, repo string, number int, opts *github.IssueListCommentsOptions,
 ) ([]*github.IssueComment, error) {
-	comments, _, err := c.client.Issues.ListComments(ctx, owner, repo, number, opts)
+	op := func() ([]*github.IssueComment, *github.Response, error) {
+		return c.client.Issues.ListComments(ctx, owner, repo, number, opts)
+	}
+	comments, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return nil, fmt.Errorf("error getting list of comments: %w", err)
 	}
@@ -401,7 +421,10 @@ func (c *GitHub) ListReviews(
 	number int,
 	opt *github.ListOptions,
 ) ([]*github.PullRequestReview, error) {
-	reviews, _, err := c.client.PullRequests.ListReviews(ctx, owner, repo, number, opt)
+	op := func() ([]*github.PullRequestReview, *github.Response, error) {
+		return c.client.PullRequests.ListReviews(ctx, owner, repo, number, opt)
+	}
+	reviews, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return nil, fmt.Errorf("error listing reviews for PR %s/%s/%d: %w", owner, repo, number, err)
 	}
@@ -416,7 +439,10 @@ func (c *GitHub) DismissReview(
 	reviewId int64,
 	dismissalRequest *github.PullRequestReviewDismissalRequest,
 ) (*github.PullRequestReview, error) {
-	review, _, err := c.client.PullRequests.DismissReview(ctx, owner, repo, prId, reviewId, dismissalRequest)
+	op := func() (*github.PullRequestReview, *github.Response, error) {
+		return c.client.PullRequests.DismissReview(ctx, owner, repo, prId, reviewId, dismissalRequest)
+	}
+	review, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return nil, fmt.Errorf("error dismissing review %d for PR %s/%s/%d: %w", reviewId, owner, repo, prId, err)
 	}
@@ -427,7 +453,10 @@ func (c *GitHub) DismissReview(
 func (c *GitHub) SetCommitStatus(
 	ctx context.Context, owner, repo, ref string, status *github.RepoStatus,
 ) (*github.RepoStatus, error) {
-	status, _, err := c.client.Repositories.CreateStatus(ctx, owner, repo, ref, status)
+	op := func() (*github.RepoStatus, *github.Response, error) {
+		return c.client.Repositories.CreateStatus(ctx, owner, repo, ref, status)
+	}
+	status, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return nil, fmt.Errorf("error creating commit status: %w", err)
 	}
@@ -436,8 +465,10 @@ func (c *GitHub) SetCommitStatus(
 
 // GetRepository returns a single repository for the authenticated user
 func (c *GitHub) GetRepository(ctx context.Context, owner string, name string) (*github.Repository, error) {
-	// create a slice to hold the repositories
-	repo, _, err := c.client.Repositories.Get(ctx, owner, name)
+	op := func() (*github.Repository, *github.Response, error) {
+		return c.client.Repositories.Get(ctx, owner, name)
+	}
+	repo, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return nil, fmt.Errorf("error getting repository: %w", err)
 	}
@@ -447,8 +478,11 @@ func (c *GitHub) GetRepository(ctx context.Context, owner string, name string) (
 
 // GetBranchProtection returns the branch protection for a given branch
 func (c *GitHub) GetBranchProtection(ctx context.Context, owner string,
-	repo_name string, branch_name string) (*github.Protection, error) {
-	protection, _, err := c.client.Repositories.GetBranchProtection(ctx, owner, repo_name, branch_name)
+	repoName string, branchName string) (*github.Protection, error) {
+	op := func() (*github.Protection, *github.Response, error) {
+		return c.client.Repositories.GetBranchProtection(ctx, owner, repoName, branchName)
+	}
+	protection, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return nil, err
 	}
@@ -459,7 +493,10 @@ func (c *GitHub) GetBranchProtection(ctx context.Context, owner string,
 func (c *GitHub) UpdateBranchProtection(
 	ctx context.Context, owner, repo, branch string, preq *github.ProtectionRequest,
 ) error {
-	_, _, err := c.client.Repositories.UpdateBranchProtection(ctx, owner, repo, branch, preq)
+	op := func() (*github.Protection, *github.Response, error) {
+		return c.client.Repositories.UpdateBranchProtection(ctx, owner, repo, branch, preq)
+	}
+	_, _, err := performWithRateLimitCheck(ctx, op, c)
 	return err
 }
 
@@ -480,9 +517,14 @@ func (c *GitHub) NewRequest(method, requestUrl string, body any) (*http.Request,
 func (c *GitHub) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
 	var buf bytes.Buffer
 
-	// The GitHub client closes the response body, so we need to capture it
-	// in a buffer so that we can return it to the caller
-	resp, err := c.client.Do(ctx, req, &buf)
+	op := func() (struct{}, *github.Response, error) {
+		// The GitHub client closes the response body, so we need to capture it
+		// in a buffer so that we can return it to the caller
+		resp, err := c.client.Do(ctx, req, &buf)
+		return struct{}{}, resp, err
+	}
+
+	_, resp, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil && resp == nil {
 		return nil, err
 	}
@@ -508,7 +550,10 @@ func (c *GitHub) GetOwner() string {
 
 // ListHooks lists all Hooks for the specified repository.
 func (c *GitHub) ListHooks(ctx context.Context, owner, repo string) ([]*github.Hook, error) {
-	list, resp, err := c.client.Repositories.ListHooks(ctx, owner, repo, nil)
+	op := func() ([]*github.Hook, *github.Response, error) {
+		return c.client.Repositories.ListHooks(ctx, owner, repo, nil)
+	}
+	list, resp, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil && resp.StatusCode == http.StatusNotFound {
 		// return empty list so that the caller can ignore the error and iterate over the empty list
 		return []*github.Hook{}, fmt.Errorf("hooks not found for repository %s/%s: %w", owner, repo, ErrNotFound)
@@ -518,13 +563,20 @@ func (c *GitHub) ListHooks(ctx context.Context, owner, repo string) ([]*github.H
 
 // DeleteHook deletes a specified Hook.
 func (c *GitHub) DeleteHook(ctx context.Context, owner, repo string, id int64) (*github.Response, error) {
-	resp, err := c.client.Repositories.DeleteHook(ctx, owner, repo, id)
+	op := func() (struct{}, *github.Response, error) {
+		resp, err := c.client.Repositories.DeleteHook(ctx, owner, repo, id)
+		return struct{}{}, resp, err
+	}
+	_, resp, err := performWithRateLimitCheck(ctx, op, c)
 	return resp, err
 }
 
 // CreateHook creates a new Hook.
 func (c *GitHub) CreateHook(ctx context.Context, owner, repo string, hook *github.Hook) (*github.Hook, error) {
-	h, _, err := c.client.Repositories.CreateHook(ctx, owner, repo, hook)
+	op := func() (*github.Hook, *github.Response, error) {
+		return c.client.Repositories.CreateHook(ctx, owner, repo, hook)
+	}
+	h, _, err := performWithRateLimitCheck(ctx, op, c)
 	return h, err
 }
 
@@ -553,7 +605,11 @@ func (c *GitHub) CreateSecurityAdvisory(ctx context.Context, owner, repo, severi
 		ID string `json:"ghsa_id"`
 	}{}
 
-	resp, err := c.client.Do(ctx, req, res)
+	op := func() (struct{}, *github.Response, error) {
+		resp, err := c.client.Do(ctx, req, res)
+		return struct{}{}, resp, err
+	}
+	_, resp, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return "", err
 	}
@@ -579,7 +635,11 @@ func (c *GitHub) CloseSecurityAdvisory(ctx context.Context, owner, repo, id stri
 		return err
 	}
 
-	resp, err := c.client.Do(ctx, req, nil)
+	op := func() (struct{}, *github.Response, error) {
+		resp, err := c.client.Do(ctx, req, nil)
+		return struct{}{}, resp, err
+	}
+	_, resp, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return err
 	}
@@ -592,13 +652,16 @@ func (c *GitHub) CreatePullRequest(
 	ctx context.Context,
 	owner, repo, title, body, head, base string,
 ) (*github.PullRequest, error) {
-	pr, _, err := c.client.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
-		Title:               github.String(title),
-		Body:                github.String(body),
-		Head:                github.String(head),
-		Base:                github.String(base),
-		MaintainerCanModify: github.Bool(true),
-	})
+	op := func() (*github.PullRequest, *github.Response, error) {
+		return c.client.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
+			Title:               github.String(title),
+			Body:                github.String(body),
+			Head:                github.String(head),
+			Base:                github.String(base),
+			MaintainerCanModify: github.Bool(true),
+		})
+	}
+	pr, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return nil, err
 	}
@@ -612,7 +675,10 @@ func (c *GitHub) ListPullRequests(
 	owner, repo string,
 	opt *github.PullRequestListOptions,
 ) ([]*github.PullRequest, error) {
-	prs, _, err := c.client.PullRequests.List(ctx, owner, repo, opt)
+	op := func() ([]*github.PullRequest, *github.Response, error) {
+		return c.client.PullRequests.List(ctx, owner, repo, opt)
+	}
+	prs, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return nil, err
 	}
@@ -624,40 +690,34 @@ func (c *GitHub) ListPullRequests(
 func (c *GitHub) CreateIssueComment(
 	ctx context.Context, owner, repo string, number int, comment string,
 ) (*github.IssueComment, error) {
-	var issueComment *github.IssueComment
-
-	op := func() (any, error) {
-		var err error
-
-		issueComment, _, err = c.client.Issues.CreateComment(ctx, owner, repo, number, &github.IssueComment{
+	op := func() (*github.IssueComment, *github.Response, error) {
+		return c.client.Issues.CreateComment(ctx, owner, repo, number, &github.IssueComment{
 			Body: &comment,
 		})
-
-		if isRateLimitError(err) {
-			waitWrr := c.waitForRateLimitReset(ctx, err)
-			if waitWrr == nil {
-				return nil, err
-			}
-			return nil, backoffv4.Permanent(err)
-		}
-
-		return nil, backoffv4.Permanent(err)
 	}
-	_, retryErr := performWithRetry(ctx, op)
-	return issueComment, retryErr
+
+	data, _, err := performWithRateLimitCheck(ctx, op, c)
+	return data, err
 }
 
 // UpdateIssueComment updates a comment on a pull request or an issue
 func (c *GitHub) UpdateIssueComment(ctx context.Context, owner, repo string, number int64, comment string) error {
-	_, _, err := c.client.Issues.EditComment(ctx, owner, repo, number, &github.IssueComment{
-		Body: &comment,
-	})
+	op := func() (*github.IssueComment, *github.Response, error) {
+		return c.client.Issues.EditComment(ctx, owner, repo, number, &github.IssueComment{
+			Body: &comment,
+		})
+	}
+
+	_, _, err := performWithRateLimitCheck(ctx, op, c)
 	return err
 }
 
 // GetUserId returns the user id for the authenticated user
 func (c *GitHub) GetUserId(ctx context.Context) (int64, error) {
-	user, _, err := c.client.Users.Get(ctx, "")
+	op := func() (*github.User, *github.Response, error) {
+		return c.client.Users.Get(ctx, "")
+	}
+	user, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return 0, err
 	}
@@ -666,7 +726,10 @@ func (c *GitHub) GetUserId(ctx context.Context) (int64, error) {
 
 // GetUsername returns the username for the authenticated user
 func (c *GitHub) GetUsername(ctx context.Context) (string, error) {
-	user, _, err := c.client.Users.Get(ctx, "")
+	op := func() (*github.User, *github.Response, error) {
+		return c.client.Users.Get(ctx, "")
+	}
+	user, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return "", err
 	}
@@ -675,7 +738,10 @@ func (c *GitHub) GetUsername(ctx context.Context) (string, error) {
 
 // GetPrimaryEmail returns the primary email for the authenticated user.
 func (c *GitHub) GetPrimaryEmail(ctx context.Context) (string, error) {
-	emails, _, err := c.client.Users.ListEmails(ctx, &github.ListOptions{})
+	op := func() ([]*github.UserEmail, *github.Response, error) {
+		return c.client.Users.ListEmails(ctx, &github.ListOptions{})
+	}
+	emails, _, err := performWithRateLimitCheck(ctx, op, c)
 	if err != nil {
 		return "", fmt.Errorf("cannot get email: %w", err)
 	}
@@ -707,4 +773,40 @@ func (c *GitHub) AddAuthToPushOptions(ctx context.Context, pushOptions *git.Push
 	}
 	c.credential.AddToPushOptions(pushOptions, username)
 	return nil
+}
+
+type businessOperation[T any] func() (data T, resp *github.Response, err error)
+
+type retryFuncResponseWrapper[T any] struct {
+	data T
+	resp *github.Response
+}
+
+func performWithRateLimitCheck[T any](ctx context.Context, op businessOperation[T], c *GitHub) (T, *github.Response, error) {
+	retryFunc := func() (retryFuncResponseWrapper[T], error) {
+		data, resp, err := op()
+
+		funcResp := retryFuncResponseWrapper[T]{
+			data: data,
+			resp: resp,
+		}
+
+		if isRateLimitError(err) {
+			waitErr := c.waitForRateLimitReset(ctx, err)
+			if waitErr == nil {
+				return funcResp, err
+			}
+		}
+
+		return funcResp, backoffv4.Permanent(err)
+	}
+
+	resp, err := performWithRetry(ctx, retryFunc)
+	return resp.data, resp.resp, err
+}
+
+func performWithRetry[T any](ctx context.Context, op backoffv4.OperationWithData[T]) (T, error) {
+	exponentialBackOff := backoffv4.NewExponentialBackOff()
+	maxRetriesBackoff := backoffv4.WithMaxRetries(exponentialBackOff, MaxRateLimitRetries)
+	return backoffv4.RetryWithData(op, backoffv4.WithContext(maxRetriesBackoff, ctx))
 }

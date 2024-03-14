@@ -24,7 +24,6 @@ import (
 	"net/url"
 	"time"
 
-	backoffv4 "github.com/cenkalti/backoff/v4"
 	"github.com/google/go-github/v56/github"
 	"github.com/rs/zerolog"
 	"golang.org/x/oauth2"
@@ -252,12 +251,6 @@ func logRateLimitError(logger *zerolog.Logger, errType string, waitTime time.Dur
 	}
 
 	event.Msg("rate limit exceeded")
-}
-
-func performWithRetry[T any](ctx context.Context, op backoffv4.OperationWithData[T]) (T, error) {
-	exponentialBackOff := backoffv4.NewExponentialBackOff()
-	maxRetriesBackoff := backoffv4.WithMaxRetries(exponentialBackOff, MaxRateLimitRetries)
-	return backoffv4.RetryWithData(op, backoffv4.WithContext(maxRetriesBackoff, ctx))
 }
 
 func isRateLimitError(err error) bool {
