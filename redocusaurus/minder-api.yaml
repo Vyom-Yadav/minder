@@ -152,32 +152,11 @@ paths:
           schema:
             $ref: '#/definitions/v1StoreProviderTokenResponse'
       parameters:
-        - name: provider
-          in: query
-          required: false
-          type: string
-        - name: accessToken
-          in: query
-          required: false
-          type: string
-        - name: owner
-          in: query
-          required: false
-          type: string
-        - name: context.provider
-          description: name of the provider
-          in: query
-          required: false
-          type: string
-        - name: context.project
-          description: ID of the project
-          in: query
-          required: false
-          type: string
-        - name: context.retiredOrganization
-          in: query
-          required: false
-          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1StoreProviderTokenRequest'
       tags:
         - OAuthService
   /api/v1/auth/url:
@@ -217,6 +196,41 @@ paths:
           required: false
           type: string
         - name: redirectUrl
+          in: query
+          required: false
+          type: string
+      tags:
+        - OAuthService
+  /api/v1/auth/verify:
+    get:
+      summary: >-
+        VerifyProviderCredential verifies that a credential has been created
+        matching the enrollment nonce
+      operationId: OAuthService_VerifyProviderCredential
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1VerifyProviderCredentialResponse'
+      parameters:
+        - name: context.provider
+          description: name of the provider
+          in: query
+          required: false
+          type: string
+        - name: context.project
+          description: ID of the project
+          in: query
+          required: false
+          type: string
+        - name: context.retiredOrganization
+          in: query
+          required: false
+          type: string
+        - name: enrollmentNonce
+          description: >-
+            enrollment_nonce is the state parameter returned when enrolling the
+            provider
           in: query
           required: false
           type: string
@@ -1315,54 +1329,11 @@ paths:
           schema:
             $ref: '#/definitions/v1RegisterRepositoryResponse'
       parameters:
-        - name: provider
-          in: query
-          required: false
-          type: string
-        - name: repository.owner
-          in: query
-          required: false
-          type: string
-        - name: repository.name
-          in: query
-          required: false
-          type: string
-        - name: repository.repoId
-          description: |-
-            The upstream identity of the repository, as an integer.
-            This is only set on output, and is ignored on input.
-          in: query
-          required: false
-          type: string
-          format: int64
-        - name: repository.context.provider
-          description: name of the provider
-          in: query
-          required: false
-          type: string
-        - name: repository.context.project
-          description: ID of the project
-          in: query
-          required: false
-          type: string
-        - name: repository.context.retiredOrganization
-          in: query
-          required: false
-          type: string
-        - name: context.provider
-          description: name of the provider
-          in: query
-          required: false
-          type: string
-        - name: context.project
-          description: ID of the project
-          in: query
-          required: false
-          type: string
-        - name: context.retiredOrganization
-          in: query
-          required: false
-          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1RegisterRepositoryRequest'
       tags:
         - RepositoryService
   /api/v1/results:
@@ -2250,6 +2221,8 @@ definitions:
     properties:
       url:
         type: string
+      state:
+        type: string
   v1GetProfileByIdResponse:
     type: object
     properties:
@@ -2696,6 +2669,15 @@ definitions:
         type: boolean
       error:
         type: string
+  v1RegisterRepositoryRequest:
+    type: object
+    properties:
+      provider:
+        type: string
+      repository:
+        $ref: '#/definitions/v1UpstreamRepositoryRef'
+      context:
+        $ref: '#/definitions/v1Context'
   v1RegisterRepositoryResponse:
     type: object
     properties:
@@ -2876,6 +2858,14 @@ definitions:
       ruleEvaluationId:
         type: string
         title: rule_evaluation_id is the id of the rule evaluation
+      remediationUrl:
+        type: string
+        title: >-
+          remediation_url is a url to get more data about a remediation, for PRs
+          is the link to the PR
+      ruleDisplayName:
+        type: string
+        title: rule_display_name captures the display name of the rule
     title: get the status of the rules for a given profile
   v1RuleType:
     type: object
@@ -2942,6 +2932,17 @@ definitions:
       significant risk.
        - VALUE_CRITICAL: critical severity means that the severity is critical and
       requires immediate attention.
+  v1StoreProviderTokenRequest:
+    type: object
+    properties:
+      provider:
+        type: string
+      accessToken:
+        type: string
+      owner:
+        type: string
+      context:
+        $ref: '#/definitions/v1Context'
   v1StoreProviderTokenResponse:
     type: object
   v1UpdateProfileRequest:
@@ -3016,6 +3017,18 @@ definitions:
         type: string
         format: date-time
     title: user record to be returned
+  v1VerifyProviderCredentialResponse:
+    type: object
+    properties:
+      created:
+        type: boolean
+      providerName:
+        type: string
+    title: >-
+      VerifyProviderCredentialRequest responds with a boolean indicating if the
+      provider has been created and the provider
+
+      name, if it has been created
   v1VerifyProviderTokenFromResponse:
     type: object
     properties:
