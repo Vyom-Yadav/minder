@@ -520,6 +520,7 @@ paths:
           in: path
           required: true
           type: string
+          pattern: .+
         - name: context.provider
           description: name of the provider
           in: query
@@ -1468,6 +1469,7 @@ paths:
           in: path
           required: true
           type: string
+          pattern: .+
         - name: context.provider
           description: name of the provider
           in: query
@@ -1965,6 +1967,8 @@ definitions:
       createdAt:
         type: string
         format: date-time
+      context:
+        $ref: '#/definitions/v1Context'
   v1ArtifactType:
     type: object
     description: ArtifactType defines the artifact data evaluation.
