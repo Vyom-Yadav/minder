@@ -13,6 +13,7 @@ tags:
   - name: PermissionsService
   - name: ProjectsService
   - name: ProvidersService
+  - name: InviteService
 consumes:
   - application/json
 produces:
@@ -351,6 +352,121 @@ paths:
             $ref: '#/definitions/v1CheckHealthResponse'
       tags:
         - HealthService
+  /api/v1/history:
+    get:
+      operationId: EvalResultsService_ListEvaluationHistory
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListEvaluationHistoryResponse'
+      parameters:
+        - name: context.provider
+          description: name of the provider
+          in: query
+          required: false
+          type: string
+        - name: context.project
+          description: ID of the project
+          in: query
+          required: false
+          type: string
+        - name: context.retiredOrganization
+          in: query
+          required: false
+          type: string
+        - name: entityType
+          description: List of entity types to retrieve.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: entityName
+          description: List of entity names to retrieve.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: profileName
+          description: List of profile names to retrieve.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: status
+          description: List of evaluation statuses to retrieve.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: remediation
+          description: List of remediation statuses to retrieve.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: alert
+          description: List of alert statuses to retrieve.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: from
+          description: Timestamp representing the start time of the selection window.
+          in: query
+          required: false
+          type: string
+          format: date-time
+        - name: to
+          description: Timestamp representing the end time of the selection window.
+          in: query
+          required: false
+          type: string
+          format: date-time
+        - name: cursor.cursor
+          description: |-
+            cursor is the index to start from within the collection being
+            retrieved. It's an opaque payload specified and interpreted on
+            an per-rpc basis.
+          in: query
+          required: false
+          type: string
+        - name: cursor.size
+          description: size is the number of items to retrieve from the collection.
+          in: query
+          required: false
+          type: integer
+          format: int64
+      tags:
+        - EvalResultsService
+  /api/v1/invite/{code}:
+    get:
+      operationId: InviteService_GetInviteDetails
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetInviteDetailsResponse'
+      parameters:
+        - name: code
+          description: Invite nonce/code to retrieve details for
+          in: path
+          required: true
+          type: string
+      tags:
+        - InviteService
   /api/v1/my/providers:
     get:
       summary: |-
@@ -421,7 +537,7 @@ paths:
           type: string
       tags:
         - PermissionsService
-  /api/v1/permissions/remove/{roleAssignment.role}/subject/{roleAssignment.subject}:
+  /api/v1/permissions/remove:
     delete:
       operationId: PermissionsService_RemoveRole
       responses:
@@ -430,16 +546,6 @@ paths:
           schema:
             $ref: '#/definitions/v1RemoveRoleResponse'
       parameters:
-        - name: roleAssignment.role
-          description: role is the role that is assigned.
-          in: path
-          required: true
-          type: string
-        - name: roleAssignment.subject
-          description: subject is the subject to which the role is assigned.
-          in: path
-          required: true
-          type: string
         - name: context.provider
           description: name of the provider
           in: query
@@ -454,13 +560,38 @@ paths:
           in: query
           required: false
           type: string
+        - name: roleAssignment.role
+          description: role is the role that is assigned.
+          in: query
+          required: false
+          type: string
+        - name: roleAssignment.subject
+          description: subject is the subject to which the role is assigned.
+          in: query
+          required: false
+          type: string
         - name: roleAssignment.displayName
           description: display_name is the display name of the subject.
           in: query
           required: false
           type: string
         - name: roleAssignment.project
-          description: projectt is the projectt in which the role is assigned.
+          description: project is the project in which the role is assigned.
+          in: query
+          required: false
+          type: string
+        - name: roleAssignment.email
+          description: email is the email address of the subject used for invitations.
+          in: query
+          required: false
+          type: string
+        - name: roleAssignment.firstName
+          description: first_name is the first name of the subject.
+          in: query
+          required: false
+          type: string
+        - name: roleAssignment.lastName
+          description: last_name is the last name of the subject.
           in: query
           required: false
           type: string
@@ -489,6 +620,22 @@ paths:
           in: query
           required: false
           type: string
+      tags:
+        - PermissionsService
+  /api/v1/permissions/update:
+    post:
+      operationId: PermissionsService_UpdateRole
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateRoleResponse'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1UpdateRoleRequest'
       tags:
         - PermissionsService
   /api/v1/profile:
@@ -562,6 +709,10 @@ paths:
             - ENTITY_BUILD_ENVIRONMENTS
             - ENTITY_ARTIFACTS
             - ENTITY_PULL_REQUESTS
+            - ENTITY_RELEASE
+            - ENTITY_PIPELINE_RUN
+            - ENTITY_TASK_RUN
+            - ENTITY_BUILD
           default: ENTITY_UNSPECIFIED
         - name: entity.id
           description: >-
@@ -860,6 +1011,48 @@ paths:
             $ref: '#/definitions/v1CreateEntityReconciliationTaskRequest'
       tags:
         - ProjectsService
+  /api/v1/projects/{context.projectId}/children:
+    get:
+      operationId: ProjectsService_ListChildProjects
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListChildProjectsResponse'
+      parameters:
+        - name: context.projectId
+          description: project is the project ID
+          in: path
+          required: true
+          type: string
+        - name: context.provider
+          description: name of the provider. Set to empty string when not applicable.
+          in: query
+          required: false
+          type: string
+        - name: recursive
+          description: recursive is true if child projects should be listed recursively.
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - ProjectsService
+  /api/v1/provider/register_all:
+    post:
+      operationId: ProvidersService_ReconcileEntityRegistration
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ReconcileEntityRegistrationResponse'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1ReconcileEntityRegistrationRequest'
+      tags:
+        - ProvidersService
   /api/v1/provider_classes:
     get:
       operationId: ProvidersService_ListProviderClasses
@@ -960,6 +1153,35 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1CreateProviderRequest'
+      tags:
+        - ProvidersService
+    patch:
+      operationId: ProvidersService_PatchProvider
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PatchProviderResponse'
+      parameters:
+        - name: patch
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1Provider'
+        - name: context.provider
+          description: name of the provider
+          in: query
+          required: false
+          type: string
+        - name: context.project
+          description: ID of the project
+          in: query
+          required: false
+          type: string
+        - name: context.retiredOrganization
+          in: query
+          required: false
+          type: string
       tags:
         - ProvidersService
   /api/v1/providers/{id}:
@@ -1659,7 +1881,7 @@ paths:
         based on the user's registered email address.  Note that a
         user who receives an invitation code may still accept the
         invitation even if the code was directed to a different
-        email address.  This is beacuse understanding the routing of
+        email address.  This is because understanding the routing of
         email messages is beyond the scope of Minder.
       description: |-
         This API endpoint may be called without the logged-in user
@@ -1880,6 +2102,23 @@ definitions:
         type: string
         title: name is the descriptive name of the rule, not to be confused with type
     description: Rule defines the individual call of a certain rule type.
+  ProfileSelector:
+    type: object
+    properties:
+      id:
+        type: string
+        description: >-
+          id is optional and use for updates to match upserts as well as read
+          operations. It is ignored for creates.
+      entity:
+        type: string
+        description: entity is the entity to select.
+      selector:
+        type: string
+        description: expr is the expression to select the entity.
+      description:
+        type: string
+        description: description is the human-readable description of the selector.
   PullRequestRemediationActionsReplaceTagsWithSha:
     type: object
     properties:
@@ -2123,6 +2362,16 @@ definitions:
       Removing the 'optional' keyword from the following two fields below will
       break
        buf compatibility checks.
+  v1ContextV2:
+    type: object
+    properties:
+      projectId:
+        type: string
+        title: project is the project ID
+      provider:
+        type: string
+        description: name of the provider. Set to empty string when not applicable.
+    description: ContextV2 defines the context in which a rule is evaluated.
   v1CreateEntityReconciliationTaskRequest:
     type: object
     properties:
@@ -2220,6 +2469,45 @@ definitions:
         format: date-time
       context:
         $ref: '#/definitions/v1Context'
+  v1Cursor:
+    type: object
+    properties:
+      cursor:
+        type: string
+        description: |-
+          cursor is the index to start from within the collection being
+          retrieved. It's an opaque payload specified and interpreted on
+          an per-rpc basis.
+      size:
+        type: integer
+        format: int64
+        description: size is the number of items to retrieve from the collection.
+    description: |-
+      Cursor message to be used in request messages. Its purpose is to
+      allow clients to specify the subset of records to retrieve by means
+      of index within a collection, along with the number of items to
+      retrieve.
+  v1CursorPage:
+    type: object
+    properties:
+      totalRecords:
+        type: integer
+        format: int64
+        description: Total number of records matching the request. This is optional.
+      next:
+        $ref: '#/definitions/v1Cursor'
+        description: |-
+          Cursor pointing to retrieve results logically placed after the
+          ones shipped with the message containing this struct.
+      prev:
+        $ref: '#/definitions/v1Cursor'
+        description: |-
+          Cursor pointing to retrieve results logically placed before the
+          ones shipped with the message containing this struct.
+    description: |-
+      CursorPage message used in response messages. Its purpose is to
+      send to clients links pointing to next and/or previous collection
+      subsets with respect to the one containing this struct.
   v1DeleteProfileResponse:
     type: object
   v1DeleteProjectResponse:
@@ -2281,6 +2569,10 @@ definitions:
       - ENTITY_BUILD_ENVIRONMENTS
       - ENTITY_ARTIFACTS
       - ENTITY_PULL_REQUESTS
+      - ENTITY_RELEASE
+      - ENTITY_PIPELINE_RUN
+      - ENTITY_TASK_RUN
+      - ENTITY_BUILD
     default: ENTITY_UNSPECIFIED
     description: Entity defines the entity that is supported by the provider.
   v1EntityTypedId:
@@ -2314,6 +2606,99 @@ definitions:
         type: string
         title: url is the URL to the alert
     title: EvalResultAlert holds the alert details for a given rule evaluation
+  v1EvaluationHistory:
+    type: object
+    properties:
+      entity:
+        $ref: '#/definitions/v1EvaluationHistoryEntity'
+        description: entity contains details of the entity which was evaluated.
+      rule:
+        $ref: '#/definitions/v1EvaluationHistoryRule'
+        description: >-
+          rule contains details of the rule which the entity was evaluated
+          against.
+      status:
+        $ref: '#/definitions/v1EvaluationHistoryStatus'
+        description: status contains the evaluation status.
+      alert:
+        $ref: '#/definitions/v1EvaluationHistoryAlert'
+        description: alert contains details of the alerts for this evaluation.
+      remediation:
+        $ref: '#/definitions/v1EvaluationHistoryRemediation'
+        description: remediation contains details of the remediation for this evaluation.
+      evaluatedAt:
+        type: string
+        format: date-time
+        title: created_at is the timestamp of creation of this evaluation
+  v1EvaluationHistoryAlert:
+    type: object
+    properties:
+      status:
+        type: string
+        description: |-
+          status is one of (on, off, error, skipped, not available)
+          not using enums to mirror the behaviour of the existing API contracts.
+      details:
+        type: string
+        description: >-
+          details contains optional details about the alert.
+
+          the structure and contents are alert specific, and are subject to
+          change.
+  v1EvaluationHistoryEntity:
+    type: object
+    properties:
+      id:
+        type: string
+        description: id is the unique identifier of the entity.
+      type:
+        $ref: '#/definitions/v1Entity'
+        description: type is the entity type.
+      name:
+        type: string
+        description: name is the entity name.
+  v1EvaluationHistoryRemediation:
+    type: object
+    properties:
+      status:
+        type: string
+        description: |-
+          status is one of (success, error, failure, skipped, not available)
+          not using enums to mirror the behaviour of the existing API contracts.
+      details:
+        type: string
+        description: >-
+          details contains optional details about the remediation.
+
+          the structure and contents are remediation specific, and are subject
+          to change.
+  v1EvaluationHistoryRule:
+    type: object
+    properties:
+      name:
+        type: string
+        description: name is the name of the rule instance.
+      ruleType:
+        type: string
+        description: type is the name of the rule type.
+      profile:
+        type: string
+        description: profile is the name of the profile which contains the rule.
+  v1EvaluationHistoryStatus:
+    type: object
+    properties:
+      status:
+        type: string
+        description: |-
+          status is one of (success, error, failure, skipped)
+          not using enums to mirror the behaviour of the existing API contracts.
+      details:
+        type: string
+        description: >-
+          details contains optional details about the evaluation.
+
+          the structure and contents are rule type specific, and are subject to
+          change.
   v1GetArtifactByIdResponse:
     type: object
     properties:
@@ -2341,6 +2726,22 @@ definitions:
         type: string
       state:
         type: string
+  v1GetInviteDetailsResponse:
+    type: object
+    properties:
+      projectDisplay:
+        type: string
+        title: Project associated with the invite
+      sponsorDisplay:
+        type: string
+        title: Sponsor of the invite
+      expiresAt:
+        type: string
+        format: date-time
+        description: expires_at is the time at which the invitation expires.
+      expired:
+        type: boolean
+        title: expired is true if the invitation has expired
   v1GetProfileByIdResponse:
     type: object
     properties:
@@ -2423,6 +2824,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Project'
+        title: This will be deprecated in favor of the project_roles field
+      projectRoles:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectRole'
   v1GitHubAppParams:
     type: object
     properties:
@@ -2495,6 +2902,9 @@ definitions:
         type: string
         format: date-time
         description: expires_at is the time at which the invitation expires.
+      expired:
+        type: boolean
+        description: expired is true if the invitation has expired.
       sponsor:
         type: string
         description: sponsor is the account (ID) of the user who created the invitation.
@@ -2503,6 +2913,17 @@ definitions:
         description: |-
           sponsor_display is the display name of the user who created the
           invitation.
+      projectDisplay:
+        type: string
+        description: |-
+          project_display is the display name of the project to which the user
+          is invited.
+      inviteUrl:
+        type: string
+        description: inviteURL is the URL that can be used to accept the invitation.
+      emailSkipped:
+        type: boolean
+        description: emailSkipped is true if the email was not sent to the invitee.
   v1ListArtifactsResponse:
     type: object
     properties:
@@ -2511,6 +2932,34 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Artifact'
+  v1ListChildProjectsResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
+  v1ListEvaluationHistoryResponse:
+    type: object
+    properties:
+      data:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1EvaluationHistory'
+        description: List of records retrieved.
+      page:
+        $ref: '#/definitions/v1CursorPage'
+        description: |-
+          Metadata of the current page and pointers to next and/or
+          previous pages.
+    description: |-
+      ListEvaluationHistoryResponse represents a response message for the
+      ListEvaluationHistory RPC.
+
+      It ships a collection of records retrieved and pointers to get to
+      the next and/or previous pages of data.
   v1ListEvaluationResultsResponse:
     type: object
     properties:
@@ -2636,6 +3085,11 @@ definitions:
       project:
         $ref: '#/definitions/v1Project'
         description: project is the project that was updated.
+  v1PatchProviderResponse:
+    type: object
+    properties:
+      provider:
+        $ref: '#/definitions/v1Provider'
   v1Profile:
     type: object
     properties:
@@ -2698,6 +3152,31 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/ProfileRule'
+      release:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/ProfileRule'
+      pipelineRun:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/ProfileRule'
+      taskRun:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/ProfileRule'
+      build:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/ProfileRule'
+      selection:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/ProfileSelector'
       remediate:
         type: string
         title: |-
@@ -2771,6 +3250,16 @@ definitions:
       description:
         type: string
         description: description is the description of the project to update.
+  v1ProjectRole:
+    type: object
+    properties:
+      role:
+        $ref: '#/definitions/v1Role'
+      project:
+        $ref: '#/definitions/v1Project'
+    title: >-
+      ProjectRole has the project along with the role the user has in the
+      project
   v1Provider:
     type: object
     properties:
@@ -2834,6 +3323,15 @@ definitions:
       - PROVIDER_TYPE_IMAGE_LISTER
     default: PROVIDER_TYPE_UNSPECIFIED
     description: ProviderTrait is the type of the provider.
+  v1ReconcileEntityRegistrationRequest:
+    type: object
+    properties:
+      context:
+        $ref: '#/definitions/v1Context'
+      entity:
+        type: string
+  v1ReconcileEntityRegistrationResponse:
+    type: object
   v1RegisterRepoResult:
     type: object
     properties:
@@ -2868,6 +3366,9 @@ definitions:
       roleAssignment:
         $ref: '#/definitions/v1RoleAssignment'
         description: role_assignment is the role assignment that was removed.
+      invitation:
+        $ref: '#/definitions/v1Invitation'
+        description: invitation contains the details of the invitation that was removed.
   v1Repository:
     type: object
     properties:
@@ -2926,6 +3427,14 @@ definitions:
       project:
         type: string
         description: project is the project to which the user is invited.
+      isAccepted:
+        type: boolean
+        description: is_accepted is the status of the invitation.
+      projectDisplay:
+        type: string
+        description: |-
+          project_display is the display name of the project to which the user
+          is invited.
   v1RestType:
     type: object
     properties:
@@ -2968,6 +3477,9 @@ definitions:
       name:
         type: string
         description: name is the name of the role.
+      displayName:
+        type: string
+        title: display name of the role
       description:
         type: string
         description: description is the description of the role.
@@ -2985,7 +3497,16 @@ definitions:
         description: display_name is the display name of the subject.
       project:
         type: string
-        description: projectt is the projectt in which the role is assigned.
+        description: project is the project in which the role is assigned.
+      email:
+        type: string
+        description: email is the email address of the subject used for invitations.
+      firstName:
+        type: string
+        description: first_name is the first name of the subject.
+      lastName:
+        type: string
+        description: last_name is the last name of the subject.
   v1RuleEvaluationStatus:
     type: object
     properties:
@@ -3167,6 +3688,46 @@ definitions:
       project:
         $ref: '#/definitions/v1Project'
         description: project is the project that was updated.
+  v1UpdateRoleRequest:
+    type: object
+    properties:
+      context:
+        $ref: '#/definitions/v1Context'
+        description: context is the context in which the role assignment is evaluated.
+      subject:
+        type: string
+        title: |-
+          subject is the account to change permissions for.
+          The account must already have permissions on the project
+      roles:
+        type: array
+        items:
+          type: string
+        description: >-
+          All subject roles are _replaced_ with the following role assignments. 
+          Must be non-empty,
+
+          use RemoveRole to remove permissions entirely from the project.
+      email:
+        type: string
+        title: >-
+          email is the email address of the subject used for updating
+          invitations
+  v1UpdateRoleResponse:
+    type: object
+    properties:
+      roleAssignments:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1RoleAssignment'
+        description: role_assignments are the role assignments that were updated.
+      invitations:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Invitation'
+        description: invitations contains the details of the invitations that were updated.
   v1UpdateRuleTypeRequest:
     type: object
     properties:
