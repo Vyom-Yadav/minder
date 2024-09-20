@@ -9,6 +9,7 @@ tags:
   - name: RepositoryService
   - name: UserService
   - name: ProfileService
+  - name: RuleTypeService
   - name: EvalResultsService
   - name: PermissionsService
   - name: ProjectsService
@@ -451,6 +452,35 @@ paths:
           format: int64
       tags:
         - EvalResultsService
+  /api/v1/history/{id}:
+    get:
+      operationId: EvalResultsService_GetEvaluationHistory
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetEvaluationHistoryResponse'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: context.provider
+          description: name of the provider
+          in: query
+          required: false
+          type: string
+        - name: context.project
+          description: ID of the project
+          in: query
+          required: false
+          type: string
+        - name: context.retiredOrganization
+          in: query
+          required: false
+          type: string
+      tags:
+        - EvalResultsService
   /api/v1/invite/{code}:
     get:
       operationId: InviteService_GetInviteDetails
@@ -667,6 +697,37 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1UpdateProfileRequest'
+      tags:
+        - ProfileService
+  /api/v1/profile/name/{name}:
+    get:
+      operationId: ProfileService_GetProfileByName
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProfileByNameResponse'
+      parameters:
+        - name: name
+          description: name is the name of the profile to get
+          in: path
+          required: true
+          type: string
+          pattern: .+
+        - name: context.provider
+          description: name of the provider
+          in: query
+          required: false
+          type: string
+        - name: context.project
+          description: ID of the project
+          in: query
+          required: false
+          type: string
+        - name: context.retiredOrganization
+          in: query
+          required: false
+          type: string
       tags:
         - ProfileService
   /api/v1/profile/name/{name}/status:
@@ -1662,7 +1723,7 @@ paths:
         - EvalResultsService
   /api/v1/rule_type:
     post:
-      operationId: ProfileService_CreateRuleType
+      operationId: RuleTypeService_CreateRuleType
       responses:
         '200':
           description: A successful response.
@@ -1676,9 +1737,9 @@ paths:
           schema:
             $ref: '#/definitions/v1CreateRuleTypeRequest'
       tags:
-        - ProfileService
+        - RuleTypeService
     put:
-      operationId: ProfileService_UpdateRuleType
+      operationId: RuleTypeService_UpdateRuleType
       responses:
         '200':
           description: A successful response.
@@ -1692,10 +1753,10 @@ paths:
           schema:
             $ref: '#/definitions/v1UpdateRuleTypeRequest'
       tags:
-        - ProfileService
+        - RuleTypeService
   /api/v1/rule_type/name/{name}:
     get:
-      operationId: ProfileService_GetRuleTypeByName
+      operationId: RuleTypeService_GetRuleTypeByName
       responses:
         '200':
           description: A successful response.
@@ -1723,10 +1784,10 @@ paths:
           required: false
           type: string
       tags:
-        - ProfileService
+        - RuleTypeService
   /api/v1/rule_type/{id}:
     get:
-      operationId: ProfileService_GetRuleTypeById
+      operationId: RuleTypeService_GetRuleTypeById
       responses:
         '200':
           description: A successful response.
@@ -1753,9 +1814,9 @@ paths:
           required: false
           type: string
       tags:
-        - ProfileService
+        - RuleTypeService
     delete:
-      operationId: ProfileService_DeleteRuleType
+      operationId: RuleTypeService_DeleteRuleType
       responses:
         '200':
           description: A successful response.
@@ -1782,10 +1843,10 @@ paths:
           required: false
           type: string
       tags:
-        - ProfileService
+        - RuleTypeService
   /api/v1/rule_types:
     get:
-      operationId: ProfileService_ListRuleTypes
+      operationId: RuleTypeService_ListRuleTypes
       responses:
         '200':
           description: A successful response.
@@ -1807,7 +1868,7 @@ paths:
           required: false
           type: string
       tags:
-        - ProfileService
+        - RuleTypeService
   /api/v1/user:
     get:
       operationId: UserService_GetUser
@@ -2002,6 +2063,8 @@ definitions:
       profile:
         $ref: '#/definitions/JQComparisonOperator'
         description: Profile points to the profile itself.
+      constant:
+        title: Constant points to a constant value
   EvalRego:
     type: object
     properties:
@@ -2200,6 +2263,12 @@ definitions:
         $ref: '#/definitions/v1UpstreamRepositoryRef'
       context:
         $ref: '#/definitions/v1Context'
+      entity:
+        $ref: '#/definitions/v1UpstreamEntityRef'
+        description: |-
+          entity is the entity to register. This is the same as the repository
+          field, but uses the new UpstreamEntityRef message. This is what we'll
+          migrate to eventually.
   RestTypeFallback:
     type: object
     properties:
@@ -2630,6 +2699,9 @@ definitions:
         type: string
         format: date-time
         title: created_at is the timestamp of creation of this evaluation
+      id:
+        type: string
+        description: id is the unique identifier of the evaluation.
   v1EvaluationHistoryAlert:
     type: object
     properties:
@@ -2684,6 +2756,9 @@ definitions:
       profile:
         type: string
         description: profile is the name of the profile which contains the rule.
+      severity:
+        $ref: '#/definitions/v1Severity'
+        description: severity is the severity of the rule type.
   v1EvaluationHistoryStatus:
     type: object
     properties:
@@ -2726,6 +2801,15 @@ definitions:
         type: string
       state:
         type: string
+  v1GetEvaluationHistoryResponse:
+    type: object
+    properties:
+      evaluation:
+        $ref: '#/definitions/v1EvaluationHistory'
+        title: The requested record
+    description: |-
+      GetEvaluationHistoryResponse represents a response message for the
+      GetEvaluationHistory RPC.
   v1GetInviteDetailsResponse:
     type: object
     properties:
@@ -2743,6 +2827,11 @@ definitions:
         type: boolean
         title: expired is true if the invitation has expired
   v1GetProfileByIdResponse:
+    type: object
+    properties:
+      profile:
+        $ref: '#/definitions/v1Profile'
+  v1GetProfileByNameResponse:
     type: object
     properties:
       profile:
@@ -3024,6 +3113,15 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1UpstreamRepositoryRef'
+      entities:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1RegistrableUpstreamEntityRef'
+        description: |-
+          entities is the same list as the repositories, but it
+          uses the new UpstreamEntityRef message. This is what
+          we'll migrate to eventually.
   v1ListRepositoriesResponse:
     type: object
     properties:
@@ -3355,11 +3453,25 @@ definitions:
         $ref: '#/definitions/v1UpstreamRepositoryRef'
       context:
         $ref: '#/definitions/v1Context'
+      entity:
+        $ref: '#/definitions/v1UpstreamEntityRef'
+        description: |-
+          entity is the entity to register. This is the same as the repository
+          field, but uses the new UpstreamEntityRef message. This is what we'll
+          migrate to eventually.
   v1RegisterRepositoryResponse:
     type: object
     properties:
       result:
         $ref: '#/definitions/v1RegisterRepoResult'
+  v1RegistrableUpstreamEntityRef:
+    type: object
+    properties:
+      entity:
+        $ref: '#/definitions/v1UpstreamEntityRef'
+      registered:
+        type: boolean
+        description: True if the entity is already registered in Minder.
   v1RemoveRoleResponse:
     type: object
     properties:
@@ -3413,6 +3525,9 @@ definitions:
         type: string
       license:
         type: string
+      properties:
+        type: object
+        description: properties is a map of properties of the entity.
   v1ResolveInvitationResponse:
     type: object
     properties:
@@ -3581,6 +3696,9 @@ definitions:
       ruleDisplayName:
         type: string
         title: rule_display_name captures the display name of the rule
+      releasePhase:
+        $ref: '#/definitions/v1RuleTypeReleasePhase'
+        title: release_phase is the phase of the release
     title: get the status of the rules for a given profile
   v1RuleType:
     type: object
@@ -3596,6 +3714,11 @@ definitions:
       displayName:
         type: string
         description: display_name is the display name of the rule type.
+      shortFailureMessage:
+        type: string
+        description: >-
+          short_failure_message is the message to display when the evaluation
+          fails.
       context:
         $ref: '#/definitions/v1Context'
         description: context is the context in which the rule is evaluated.
@@ -3611,9 +3734,24 @@ definitions:
       severity:
         $ref: '#/definitions/v1Severity'
         description: severity is the severity of the rule type.
+      releasePhase:
+        $ref: '#/definitions/v1RuleTypeReleasePhase'
+        description: >-
+          release_phase is the release phase of the rule type, i.e. alpha, beta,
+          ga, deprecated.
     description: |-
       RuleType defines rules that may or may not be user defined.
       The version is assumed from the folder's version.
+  v1RuleTypeReleasePhase:
+    type: string
+    enum:
+      - RULE_TYPE_RELEASE_PHASE_UNSPECIFIED
+      - RULE_TYPE_RELEASE_PHASE_ALPHA
+      - RULE_TYPE_RELEASE_PHASE_BETA
+      - RULE_TYPE_RELEASE_PHASE_GA
+      - RULE_TYPE_RELEASE_PHASE_DEPRECATED
+    default: RULE_TYPE_RELEASE_PHASE_UNSPECIFIED
+    description: RuleTypeReleasePhase defines the release phase of the rule type.
   v1Severity:
     type: object
     properties:
@@ -3742,6 +3880,29 @@ definitions:
         $ref: '#/definitions/v1RuleType'
         description: rule_type is the rule type that was updated.
     description: UpdateRuleTypeResponse is the response to update a rule type.
+  v1UpstreamEntityRef:
+    type: object
+    properties:
+      context:
+        $ref: '#/definitions/v1ContextV2'
+        title: |-
+          context is the context in which the entity is evaluated.
+          Note that the context is included here since users of
+          this message may return upstream references from
+          multiple providers
+      type:
+        $ref: '#/definitions/v1Entity'
+        description: type is the type of the entity.
+      properties:
+        type: object
+        description: |-
+          properties is a map of properties of the entity.
+          This will be used to identify the entity in the upstream system
+          and will be a subset of the properties of the entity that will
+          be stored in Minder.
+    description: |-
+      UpstreamEntityRef providers enough information for the
+      provider to identify the entity in the upstream system.
   v1UpstreamRepositoryRef:
     type: object
     properties:
