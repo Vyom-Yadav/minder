@@ -35,8 +35,10 @@ func TestValidateConfig(t *testing.T) {
 					MinElapsed: parseTimeDuration(t, "1h"),
 				},
 				EventConfig: reminder.EventConfig{
-					Connection: config.DatabaseConfig{
-						Port: 8080,
+					SQLPubConfig: reminder.SQLPubConfig{
+						Connection: config.DatabaseConfig{
+							Port: 8080,
+						},
 					},
 				},
 			},
