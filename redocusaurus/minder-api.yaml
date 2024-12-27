@@ -9,6 +9,7 @@ tags:
   - name: RepositoryService
   - name: UserService
   - name: ProfileService
+  - name: DataSourceService
   - name: RuleTypeService
   - name: EvalResultsService
   - name: PermissionsService
@@ -40,7 +41,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -69,7 +74,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -98,7 +107,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -107,6 +120,10 @@ paths:
           required: false
           type: string
         - name: from
+          description: |-
+            from is the filter to apply to the list of artifacts.
+            An example is "repository=org1/repo1,org2/repo2"
+            to filter by repository names. This is optional.
           in: query
           required: false
           type: string
@@ -131,7 +148,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -140,6 +161,10 @@ paths:
           required: false
           type: string
         - name: from
+          description: |-
+            from is the filter to apply to the list of artifacts.
+            An example is "repository=org1/repo1,org2/repo2"
+            to filter by repository names. This is optional.
           in: query
           required: false
           type: string
@@ -171,15 +196,16 @@ paths:
             $ref: '#/definitions/v1GetAuthorizationURLResponse'
       parameters:
         - name: cli
+          description: cli is true if the request is being made from a CLI.
           in: query
           required: false
           type: boolean
-        - name: port
-          in: query
-          required: false
-          type: integer
-          format: int32
         - name: owner
+          description: >-
+            owner is the owner (e.g GitHub org) that the provider is associated
+            with.
+
+            This is optional.
           in: query
           required: false
           type: string
@@ -189,7 +215,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -198,6 +228,9 @@ paths:
           required: false
           type: string
         - name: redirectUrl
+          description: >-
+            redirect_url is the URL to redirect to after the authorization is
+            complete.
           in: query
           required: false
           type: string
@@ -232,7 +265,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -245,7 +282,7 @@ paths:
             enrollment_nonce is the state parameter returned when enrolling the
             provider
           in: query
-          required: false
+          required: true
           type: string
       tags:
         - OAuthService
@@ -276,7 +313,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -313,7 +354,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -343,6 +388,178 @@ paths:
             $ref: '#/definitions/OAuthServiceStoreProviderTokenBody'
       tags:
         - OAuthService
+  /api/v1/data_source:
+    post:
+      operationId: DataSourceService_CreateDataSource
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateDataSourceResponse'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1CreateDataSourceRequest'
+      tags:
+        - DataSourceService
+    put:
+      operationId: DataSourceService_UpdateDataSource
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateDataSourceResponse'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1UpdateDataSourceRequest'
+      tags:
+        - DataSourceService
+  /api/v1/data_source/name/{name}:
+    get:
+      operationId: DataSourceService_GetDataSourceByName
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDataSourceByNameResponse'
+      parameters:
+        - name: name
+          in: path
+          required: true
+          type: string
+          pattern: .+
+        - name: context.projectId
+          description: >-
+            project is the project ID.  If empty or unset, will select the
+            user's default project
+
+            if they only have one project.
+          in: query
+          required: false
+          type: string
+        - name: context.provider
+          description: name of the provider. Set to empty string when not applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - DataSourceService
+    delete:
+      operationId: DataSourceService_DeleteDataSourceByName
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteDataSourceByNameResponse'
+      parameters:
+        - name: name
+          in: path
+          required: true
+          type: string
+          pattern: .+
+        - name: context.projectId
+          description: >-
+            project is the project ID.  If empty or unset, will select the
+            user's default project
+
+            if they only have one project.
+          in: query
+          required: false
+          type: string
+        - name: context.provider
+          description: name of the provider. Set to empty string when not applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - DataSourceService
+  /api/v1/data_source/{id}:
+    get:
+      operationId: DataSourceService_GetDataSourceById
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDataSourceByIdResponse'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: context.projectId
+          description: >-
+            project is the project ID.  If empty or unset, will select the
+            user's default project
+
+            if they only have one project.
+          in: query
+          required: false
+          type: string
+        - name: context.provider
+          description: name of the provider. Set to empty string when not applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - DataSourceService
+    delete:
+      operationId: DataSourceService_DeleteDataSourceById
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteDataSourceByIdResponse'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: context.projectId
+          description: >-
+            project is the project ID.  If empty or unset, will select the
+            user's default project
+
+            if they only have one project.
+          in: query
+          required: false
+          type: string
+        - name: context.provider
+          description: name of the provider. Set to empty string when not applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - DataSourceService
+  /api/v1/data_sources:
+    get:
+      operationId: DataSourceService_ListDataSources
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListDataSourcesResponse'
+      parameters:
+        - name: context.projectId
+          description: >-
+            project is the project ID.  If empty or unset, will select the
+            user's default project
+
+            if they only have one project.
+          in: query
+          required: false
+          type: string
+        - name: context.provider
+          description: name of the provider. Set to empty string when not applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - DataSourceService
   /api/v1/health:
     get:
       operationId: HealthService_CheckHealth
@@ -368,7 +585,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -436,18 +657,40 @@ paths:
           required: false
           type: string
           format: date-time
+        - name: labelFilter
+          description: >-
+            Filter evaluation history to only those matching the specified
+            labels.
+
+
+            The default is to return all user-created profiles; the string "*"
+            can
+
+            be used to select all profiles, including system profiles.  This
+            syntax
+
+            may be expanded in the future.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
         - name: cursor.cursor
           description: |-
             cursor is the index to start from within the collection being
             retrieved. It's an opaque payload specified and interpreted on
-            an per-rpc basis.
+            an per-rpc basis. An empty string is used to indicate the first
+            item in the collection.
           in: query
           required: false
           type: string
         - name: cursor.size
-          description: size is the number of items to retrieve from the collection.
+          description: |-
+            size is the number of items to retrieve from the collection.
+            0 uses a server-defined default.
           in: query
-          required: false
+          required: true
           type: integer
           format: int64
       tags:
@@ -471,7 +714,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -497,35 +744,6 @@ paths:
           type: string
       tags:
         - InviteService
-  /api/v1/my/providers:
-    get:
-      summary: |-
-        GetUnclaimedProviders returns a list of known provider configurations
-        that this user could claim based on their identity.  This is a read-only
-        operation for use by clients which wish to present a menu of options.
-      operationId: ProvidersService_GetUnclaimedProviders
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetUnclaimedProvidersResponse'
-      parameters:
-        - name: context.provider
-          description: name of the provider
-          in: query
-          required: false
-          type: string
-        - name: context.project
-          description: ID of the project
-          in: query
-          required: false
-          type: string
-        - name: context.retiredOrganization
-          in: query
-          required: false
-          type: string
-      tags:
-        - ProvidersService
   /api/v1/permissions/assign:
     post:
       operationId: PermissionsService_AssignRole
@@ -557,7 +775,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -582,7 +804,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -593,7 +819,7 @@ paths:
         - name: roleAssignment.role
           description: role is the role that is assigned.
           in: query
-          required: false
+          required: true
           type: string
         - name: roleAssignment.subject
           description: subject is the subject to which the role is assigned.
@@ -642,7 +868,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -720,7 +950,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -751,7 +985,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -762,7 +1000,7 @@ paths:
         - name: entity.type
           description: entity is the entity to get status for. Incompatible with `all`
           in: query
-          required: false
+          required: true
           type: string
           enum:
             - ENTITY_UNSPECIFIED
@@ -780,9 +1018,12 @@ paths:
             id is the ID of the entity to get status for. Incompatible with
             `all`
           in: query
-          required: false
+          required: true
           type: string
         - name: all
+          description: |-
+            all is true if the status of all entities should be returned.
+            Incompatible with `entity`. This is optional.
           in: query
           required: false
           type: boolean
@@ -792,10 +1033,16 @@ paths:
           required: false
           type: string
         - name: ruleType
+          description: |-
+            rule_type is the type of the rule to filter on.
+            This is optional.
           in: query
           required: false
           type: string
         - name: ruleName
+          description: |-
+            rule_name is the name of the rule to filter on.
+            This is optional.
           in: query
           required: false
           type: string
@@ -821,7 +1068,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -850,7 +1101,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -887,7 +1142,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -912,7 +1171,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -937,7 +1200,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -986,7 +1253,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1046,7 +1317,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1082,7 +1357,11 @@ paths:
             $ref: '#/definitions/v1ListChildProjectsResponse'
       parameters:
         - name: context.projectId
-          description: project is the project ID
+          description: >-
+            project is the project ID.  If empty or unset, will select the
+            user's default project
+
+            if they only have one project.
           in: path
           required: true
           type: string
@@ -1129,7 +1408,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1154,7 +1437,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1163,9 +1450,11 @@ paths:
           required: false
           type: string
         - name: limit
-          description: limit is the maximum number of providers to return.
+          description: |-
+            limit is the maximum number of providers to return.
+            0 uses a server-defined default.
           in: query
-          required: false
+          required: true
           type: integer
           format: int32
         - name: cursor
@@ -1191,7 +1480,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1235,7 +1528,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1265,7 +1562,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1295,7 +1596,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1319,6 +1624,9 @@ paths:
           required: false
           type: string
         - name: limit
+          description: |-
+            limit is the maximum number of results to return.
+            This is optional.
           in: query
           required: false
           type: string
@@ -1329,7 +1637,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1338,6 +1650,9 @@ paths:
           required: false
           type: string
         - name: cursor
+          description: |-
+            cursor is the cursor to use for the next page of results.
+            This is optional.
           in: query
           required: false
           type: string
@@ -1357,6 +1672,9 @@ paths:
           required: true
           type: string
         - name: limit
+          description: |-
+            limit is the maximum number of results to return.
+            This is optional.
           in: query
           required: false
           type: string
@@ -1367,7 +1685,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1376,6 +1698,9 @@ paths:
           required: false
           type: string
         - name: cursor
+          description: |-
+            cursor is the cursor to use for the next page of results.
+            This is optional.
           in: query
           required: false
           type: string
@@ -1400,7 +1725,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1429,7 +1758,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1458,7 +1791,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1486,7 +1823,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1520,7 +1861,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1553,7 +1898,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1587,7 +1936,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1620,7 +1973,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1681,7 +2038,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1775,7 +2136,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1805,7 +2170,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1834,7 +2203,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1859,7 +2232,11 @@ paths:
           required: false
           type: string
         - name: context.project
-          description: ID of the project
+          description: >-
+            ID of the project.  If empty or unset, will select the user's
+            default project
+
+            if they only have one project.
           in: query
           required: false
           type: string
@@ -1956,11 +2333,27 @@ paths:
       tags:
         - UserService
 definitions:
+  AlertAlertTypePRComment:
+    type: object
+    properties:
+      reviewMessage:
+        type: string
+    required:
+      - reviewMessage
   AlertAlertTypeSA:
     type: object
     properties:
       severity:
         type: string
+  DefPath:
+    type: object
+    properties:
+      fileName:
+        type: string
+      alternatives:
+        type: array
+        items:
+          type: string
   DefinitionAlert:
     type: object
     properties:
@@ -1968,14 +2361,14 @@ definitions:
         type: string
       securityAdvisory:
         $ref: '#/definitions/AlertAlertTypeSA'
+      pullRequestComment:
+        $ref: '#/definitions/AlertAlertTypePRComment'
   DefinitionEval:
     type: object
     properties:
       type:
         type: string
-        title: |-
-          type is the type of the data evaluation.
-          Right now only `jq` is supported as a driver
+        description: type is the type of the data evaluation.
       jq:
         type: array
         items:
@@ -1999,10 +2392,24 @@ definitions:
       homoglyphs:
         $ref: '#/definitions/EvalHomoglyphs'
         description: homoglyphs is only used if the `homoglyphs` type is selected.
+      dataSources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1DataSourceReference'
+        description: |-
+          Data sources that the rule refers to. These are used to
+          instantiate the relevant data sources for the rule and keep
+          track of them as dependencies.
+
+          Note that the data source must exist in the project hierarchy
+          in order to be used in the rule.
     description: |-
       Eval defines the data evaluation definition.
       This pertains to the way we traverse data from the upstream
       endpoint and how we compare it to the rule.
+    required:
+      - type
   DefinitionIngest:
     type: object
     properties:
@@ -2021,14 +2428,27 @@ definitions:
         description: builtin is the builtin data ingestion.
       artifact:
         $ref: '#/definitions/v1ArtifactType'
-        description: artifact is the artifact data ingestion.
+        description: |-
+          artifact is the artifact data ingestion.
+          artifact currently only applies to artifacts.
       git:
         $ref: '#/definitions/v1GitType'
-        description: git is the git data ingestion.
+        description: |-
+          git is the git data ingestion.
+          git currently only applies to repositories.
       diff:
         $ref: '#/definitions/v1DiffType'
-        description: diff is the diff data ingestion.
+        description: |-
+          diff is the diff data ingestion.
+          diff currently only applies to pull_requests.
+      deps:
+        $ref: '#/definitions/v1DepsType'
+        description: |-
+          deps is the deps data ingestion.
+          deps currently only applies to repositories.
     description: Ingest defines how the data is ingested.
+    required:
+      - type
   DefinitionRemediate:
     type: object
     properties:
@@ -2040,6 +2460,24 @@ definitions:
         $ref: '#/definitions/RemediateGhBranchProtectionType'
       pullRequest:
         $ref: '#/definitions/RemediatePullRequestRemediation'
+  DepsTypePullRequestConfigs:
+    type: object
+    properties:
+      filter:
+        type: string
+        description: >-
+          filter is the filter to apply to the PRs.  The default value is
+          "NEW_AND_UPDATED".
+  DepsTypeRepoConfigs:
+    type: object
+    properties:
+      branch:
+        type: string
+    description: >-
+      branch is the branch of the git repository, when applied to repository
+      entities.
+
+      Has no meaning or effect on other entity types.
   DiffTypeEcosystem:
     type: object
     properties:
@@ -2062,9 +2500,15 @@ definitions:
         title: Ingested points to the data retrieved in the `ingest` section
       profile:
         $ref: '#/definitions/JQComparisonOperator'
-        description: Profile points to the profile itself.
+        description: |-
+          Profile points to the profile itself.
+          This is mutually exclusive with the `constant` field.
       constant:
-        title: Constant points to a constant value
+        description: |-
+          Constant points to a constant value.
+          This is mutually exclusive with the `profile` field.
+    required:
+      - ingested
   EvalRego:
     type: object
     properties:
@@ -2091,6 +2535,8 @@ definitions:
           `constraints` type is selected. The default is `text`
           which returns human-readable text. The other option is
           `json` which returns a JSON array containing the violations.
+    required:
+      - def
   EvalTrusty:
     type: object
     properties:
@@ -2107,6 +2553,8 @@ definitions:
     properties:
       def:
         type: string
+    required:
+      - def
   ListEvaluationResultsResponseEntityEvaluationResults:
     type: object
     properties:
@@ -2141,10 +2589,18 @@ definitions:
     properties:
       accessToken:
         type: string
+        description: access_token is the token to store.
       owner:
         type: string
+        description: >-
+          owner is the owner (e.g GitHub org) that the provider is associated
+          with.
+
+          This is optional.
       context:
         $ref: '#/definitions/v1Context'
+    required:
+      - accessToken
   ProfileRule:
     type: object
     properties:
@@ -2226,10 +2682,22 @@ definitions:
     properties:
       title:
         type: string
-        title: the title of the PR
+        description: >-
+          the title of the PR
+
+          This is not validated here as it will be validated by the repository
+          provider, i.e. GitHub upon
+
+          creation of the PR.
       body:
         type: string
-        title: the body of the PR
+        description: >-
+          the body of the PR
+
+          This is not validated here as it will be validated by the repository
+          provider, i.e. GitHub upon
+
+          creation of the PR.
       contents:
         type: array
         items:
@@ -2246,6 +2714,14 @@ definitions:
           -- minder.actions.replace_tags_with_sha - finds any github actions
           within a workflow
                                                     file and replaces the tag with the SHA
+          -- minder.yq.evaluate - evaluates a yq expression on a file
+      params:
+        type: object
+        description: >-
+          params are unstructured parameters passed to the method. These are
+          optional
+
+          and evaluated by the method.
       actionsReplaceTagsWithSha:
         $ref: '#/definitions/PullRequestRemediationActionsReplaceTagsWithSha'
         title: >-
@@ -2261,6 +2737,9 @@ definitions:
     properties:
       repository:
         $ref: '#/definitions/v1UpstreamRepositoryRef'
+        description: |-
+          repository is the repository to register. This is optional if entity
+          is set.
       context:
         $ref: '#/definitions/v1Context'
       entity:
@@ -2268,11 +2747,11 @@ definitions:
         description: |-
           entity is the entity to register. This is the same as the repository
           field, but uses the new UpstreamEntityRef message. This is what we'll
-          migrate to eventually.
-  RestTypeFallback:
+          migrate to eventually. This is optional if repository is set.
+  RestDataSourceDefFallback:
     type: object
     properties:
-      httpCode:
+      httpStatus:
         type: integer
         format: int32
       body:
@@ -2308,6 +2787,9 @@ definitions:
     description: >-
       Definition defines the rule type. It encompases the schema and the data
       evaluation.
+    required:
+      - ingest
+      - eval
   protobufNullValue:
     type: string
     enum:
@@ -2327,6 +2809,7 @@ definitions:
         type: string
       owner:
         type: string
+        description: owner is the artifact owner. This is optional.
       name:
         type: string
       type:
@@ -2335,6 +2818,9 @@ definitions:
         type: string
       repository:
         type: string
+        description: |-
+          repository is the repository the artifact originated from.
+          This is optional.
       versions:
         type: array
         items:
@@ -2345,6 +2831,12 @@ definitions:
         format: date-time
       context:
         $ref: '#/definitions/v1Context'
+    required:
+      - artifactPk
+      - name
+      - type
+      - visibility
+      - createdAt
   v1ArtifactType:
     type: object
     description: ArtifactType defines the artifact data evaluation.
@@ -2363,6 +2855,9 @@ definitions:
       createdAt:
         type: string
         format: date-time
+    description: |-
+      ArtifactVersion is a version of an artifact.
+      This is currently not populated in any requests or responses.
   v1AssignRoleRequest:
     type: object
     properties:
@@ -2372,18 +2867,22 @@ definitions:
       roleAssignment:
         $ref: '#/definitions/v1RoleAssignment'
         description: role_assignment is the role assignment to be created.
+    required:
+      - roleAssignment
   v1AssignRoleResponse:
     type: object
     properties:
       roleAssignment:
         $ref: '#/definitions/v1RoleAssignment'
-        description: role_assignment is the role assignment that was created.
+        description: |-
+          role_assignment is the role assignment that was created.
+          This is optional.
       invitation:
         $ref: '#/definitions/v1Invitation'
         description: |-
           invitation contains the details of the invitation for the
           assigned user to join the project if the user is not already
-          a member.
+          a member. This is optional.
   v1AuthorizationFlow:
     type: string
     enum:
@@ -2410,6 +2909,8 @@ definitions:
     properties:
       status:
         type: string
+    required:
+      - status
   v1Context:
     type: object
     properties:
@@ -2418,7 +2919,11 @@ definitions:
         title: name of the provider
       project:
         type: string
-        title: ID of the project
+        description: >-
+          ID of the project.  If empty or unset, will select the user's default
+          project
+
+          if they only have one project.
       retiredOrganization:
         type: string
     description: >-
@@ -2436,11 +2941,26 @@ definitions:
     properties:
       projectId:
         type: string
-        title: project is the project ID
+        description: >-
+          project is the project ID.  If empty or unset, will select the user's
+          default project
+
+          if they only have one project.
       provider:
         type: string
         description: name of the provider. Set to empty string when not applicable.
     description: ContextV2 defines the context in which a rule is evaluated.
+  v1CreateDataSourceRequest:
+    type: object
+    properties:
+      dataSource:
+        $ref: '#/definitions/v1DataSource'
+    title: DataSource service
+  v1CreateDataSourceResponse:
+    type: object
+    properties:
+      dataSource:
+        $ref: '#/definitions/v1DataSource'
   v1CreateEntityReconciliationTaskRequest:
     type: object
     properties:
@@ -2452,6 +2972,8 @@ definitions:
         description: >-
           context is the context in which the entity reconciliation task is
           created.
+    required:
+      - entity
   v1CreateEntityReconciliationTaskResponse:
     type: object
   v1CreateProfileRequest:
@@ -2460,11 +2982,15 @@ definitions:
       profile:
         $ref: '#/definitions/v1Profile'
     title: Profile service
+    required:
+      - profile
   v1CreateProfileResponse:
     type: object
     properties:
       profile:
         $ref: '#/definitions/v1Profile'
+    required:
+      - profile
   v1CreateProjectRequest:
     type: object
     properties:
@@ -2474,12 +3000,16 @@ definitions:
       name:
         type: string
         description: name is the name of the project to create.
+    required:
+      - name
   v1CreateProjectResponse:
     type: object
     properties:
       project:
         $ref: '#/definitions/v1Project'
         description: project is the project that was created.
+    required:
+      - project
   v1CreateProviderRequest:
     type: object
     properties:
@@ -2489,6 +3019,8 @@ definitions:
       provider:
         $ref: '#/definitions/v1Provider'
         description: provider is the provider to be created.
+    required:
+      - provider
   v1CreateProviderResponse:
     type: object
     properties:
@@ -2500,6 +3032,8 @@ definitions:
         description: |-
           authorization provides additional authorization information needed
           to complete the initialization of the provider.
+    required:
+      - provider
   v1CreateRuleTypeRequest:
     type: object
     properties:
@@ -2507,6 +3041,8 @@ definitions:
         $ref: '#/definitions/v1RuleType'
         description: rule_type is the rule type to be created.
     description: CreateRuleTypeRequest is the request to create a rule type.
+    required:
+      - ruleType
   v1CreateRuleTypeResponse:
     type: object
     properties:
@@ -2514,6 +3050,8 @@ definitions:
         $ref: '#/definitions/v1RuleType'
         description: rule_type is the rule type that was created.
     description: CreateRuleTypeResponse is the response to create a rule type.
+    required:
+      - ruleType
   v1CreateUserRequest:
     type: object
     title: User service
@@ -2538,6 +3076,12 @@ definitions:
         format: date-time
       context:
         $ref: '#/definitions/v1Context'
+    required:
+      - id
+      - projectId
+      - projectName
+      - identitySubject
+      - createdAt
   v1Cursor:
     type: object
     properties:
@@ -2546,16 +3090,21 @@ definitions:
         description: |-
           cursor is the index to start from within the collection being
           retrieved. It's an opaque payload specified and interpreted on
-          an per-rpc basis.
+          an per-rpc basis. An empty string is used to indicate the first
+          item in the collection.
       size:
         type: integer
         format: int64
-        description: size is the number of items to retrieve from the collection.
+        description: |-
+          size is the number of items to retrieve from the collection.
+          0 uses a server-defined default.
     description: |-
       Cursor message to be used in request messages. Its purpose is to
       allow clients to specify the subset of records to retrieve by means
       of index within a collection, along with the number of items to
       retrieve.
+    required:
+      - size
   v1CursorPage:
     type: object
     properties:
@@ -2565,18 +3114,82 @@ definitions:
         description: Total number of records matching the request. This is optional.
       next:
         $ref: '#/definitions/v1Cursor'
-        description: |-
+        description: >-
           Cursor pointing to retrieve results logically placed after the
-          ones shipped with the message containing this struct.
+
+          ones shipped with the message containing this struct. This is
+          optional.
       prev:
         $ref: '#/definitions/v1Cursor'
-        description: |-
+        description: >-
           Cursor pointing to retrieve results logically placed before the
-          ones shipped with the message containing this struct.
+
+          ones shipped with the message containing this struct. This is
+          optional.
     description: |-
       CursorPage message used in response messages. Its purpose is to
       send to clients links pointing to next and/or previous collection
       subsets with respect to the one containing this struct.
+  v1DataSource:
+    type: object
+    properties:
+      version:
+        type: string
+        description: version is the version of the data source API.
+      type:
+        type: string
+        title: type is the data source type
+      context:
+        $ref: '#/definitions/v1ContextV2'
+        description: |-
+          context is the context in which the data source is evaluated.
+          Note that in this case we only need the project in the
+          context, since data sources are not provider-specific.
+      name:
+        type: string
+        description: |-
+          name is the name of the data source.
+          Note that this is unique within a project hierarchy.
+          Names must be lowercase and can only contain letters, numbers,
+          hyphens, and underscores.
+      id:
+        type: string
+        description: id is the unique identifier of the data source.
+        readOnly: true
+      structured:
+        $ref: '#/definitions/v1StructDataSource'
+        description: structured is the structired data - data source.
+      rest:
+        $ref: '#/definitions/v1RestDataSource'
+        description: rest is the REST data source driver.
+    description: |-
+      DataSource is a Data source instance. Data sources represent
+      external integrations that enrich the data in Minder, but do not
+      have explicit lifecycle objects (entities).  Integrations which
+      create entities are called Providers.
+    required:
+      - version
+      - name
+  v1DataSourceReference:
+    type: object
+    properties:
+      name:
+        type: string
+        description: refer to a data source by name.
+    description: |-
+      DataSourceReference is a reference to a data source.
+      Note that for a resource to refer to a data source the data source must
+      be available in the same project hierarchy.
+  v1DeleteDataSourceByIdResponse:
+    type: object
+    properties:
+      id:
+        type: string
+  v1DeleteDataSourceByNameResponse:
+    type: object
+    properties:
+      name:
+        type: string
   v1DeleteProfileResponse:
     type: object
   v1DeleteProjectResponse:
@@ -2585,33 +3198,55 @@ definitions:
       projectId:
         type: string
         description: project_id is the id of the project that was deleted.
+    required:
+      - projectId
   v1DeleteProviderByIDResponse:
     type: object
     properties:
       id:
         type: string
         title: id is the id of the provider that was deleted
+    required:
+      - id
   v1DeleteProviderResponse:
     type: object
     properties:
       name:
         type: string
         title: name is the name of the provider that was deleted
+    required:
+      - name
   v1DeleteRepositoryByIdResponse:
     type: object
     properties:
       repositoryId:
         type: string
+    required:
+      - repositoryId
   v1DeleteRepositoryByNameResponse:
     type: object
     properties:
       name:
         type: string
+    required:
+      - name
   v1DeleteRuleTypeResponse:
     type: object
     description: DeleteRuleTypeResponse is the response to delete a rule type.
   v1DeleteUserResponse:
     type: object
+  v1DepsType:
+    type: object
+    properties:
+      repo:
+        $ref: '#/definitions/DepsTypeRepoConfigs'
+      pr:
+        $ref: '#/definitions/DepsTypePullRequestConfigs'
+    description: >-
+      DepsType defines the "deps" ingester which can extract depndencies in
+      protobom
+
+      format for rule evaluation.
   v1DiffType:
     type: object
     properties:
@@ -2658,6 +3293,9 @@ definitions:
       uniquely identify an entity
 
       such as (repo, 1), (artifact, 2), ...
+    required:
+      - type
+      - id
   v1EvalResultAlert:
     type: object
     properties:
@@ -2691,10 +3329,14 @@ definitions:
         description: status contains the evaluation status.
       alert:
         $ref: '#/definitions/v1EvaluationHistoryAlert'
-        description: alert contains details of the alerts for this evaluation.
+        description: |-
+          alert contains details of the alerts for this evaluation.
+          This is optional.
       remediation:
         $ref: '#/definitions/v1EvaluationHistoryRemediation'
-        description: remediation contains details of the remediation for this evaluation.
+        description: |-
+          remediation contains details of the remediation for this evaluation.
+          This is optional.
       evaluatedAt:
         type: string
         format: date-time
@@ -2702,6 +3344,15 @@ definitions:
       id:
         type: string
         description: id is the unique identifier of the evaluation.
+    description: |-
+      EvaluationHistory represents the history of an entity evaluation.
+      This is only used in responses.
+    required:
+      - entity
+      - rule
+      - status
+      - evaluatedAt
+      - id
   v1EvaluationHistoryAlert:
     type: object
     properties:
@@ -2717,6 +3368,8 @@ definitions:
 
           the structure and contents are alert specific, and are subject to
           change.
+    required:
+      - status
   v1EvaluationHistoryEntity:
     type: object
     properties:
@@ -2729,6 +3382,10 @@ definitions:
       name:
         type: string
         description: name is the entity name.
+    required:
+      - id
+      - type
+      - name
   v1EvaluationHistoryRemediation:
     type: object
     properties:
@@ -2744,6 +3401,8 @@ definitions:
 
           the structure and contents are remediation specific, and are subject
           to change.
+    required:
+      - status
   v1EvaluationHistoryRule:
     type: object
     properties:
@@ -2759,6 +3418,11 @@ definitions:
       severity:
         $ref: '#/definitions/v1Severity'
         description: severity is the severity of the rule type.
+    required:
+      - name
+      - ruleType
+      - profile
+      - severity
   v1EvaluationHistoryStatus:
     type: object
     properties:
@@ -2774,6 +3438,9 @@ definitions:
 
           the structure and contents are rule type specific, and are subject to
           change.
+    required:
+      - status
+      - details
   v1GetArtifactByIdResponse:
     type: object
     properties:
@@ -2784,6 +3451,9 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1ArtifactVersion'
+        description: This is optional and currently always nil.
+    required:
+      - artifact
   v1GetArtifactByNameResponse:
     type: object
     properties:
@@ -2794,6 +3464,9 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1ArtifactVersion'
+        description: This is optional and currently always nil.
+    required:
+      - artifact
   v1GetAuthorizationURLResponse:
     type: object
     properties:
@@ -2801,6 +3474,19 @@ definitions:
         type: string
       state:
         type: string
+    required:
+      - url
+      - state
+  v1GetDataSourceByIdResponse:
+    type: object
+    properties:
+      dataSource:
+        $ref: '#/definitions/v1DataSource'
+  v1GetDataSourceByNameResponse:
+    type: object
+    properties:
+      dataSource:
+        $ref: '#/definitions/v1DataSource'
   v1GetEvaluationHistoryResponse:
     type: object
     properties:
@@ -2810,6 +3496,8 @@ definitions:
     description: |-
       GetEvaluationHistoryResponse represents a response message for the
       GetEvaluationHistory RPC.
+    required:
+      - evaluation
   v1GetInviteDetailsResponse:
     type: object
     properties:
@@ -2826,16 +3514,25 @@ definitions:
       expired:
         type: boolean
         title: expired is true if the invitation has expired
+    required:
+      - projectDisplay
+      - sponsorDisplay
+      - expiresAt
+      - expired
   v1GetProfileByIdResponse:
     type: object
     properties:
       profile:
         $ref: '#/definitions/v1Profile'
+    required:
+      - profile
   v1GetProfileByNameResponse:
     type: object
     properties:
       profile:
         $ref: '#/definitions/v1Profile'
+    required:
+      - profile
   v1GetProfileStatusByNameResponse:
     type: object
     properties:
@@ -2848,6 +3545,8 @@ definitions:
           type: object
           $ref: '#/definitions/v1RuleEvaluationStatus'
         title: rule_evaluation_status is the status of the rules
+    required:
+      - profileStatus
   v1GetProfileStatusByProjectResponse:
     type: object
     properties:
@@ -2857,22 +3556,30 @@ definitions:
           type: object
           $ref: '#/definitions/v1ProfileStatus'
         title: profile_status is the status of the profile
+    required:
+      - profileStatus
   v1GetProviderResponse:
     type: object
     properties:
       provider:
         $ref: '#/definitions/v1Provider'
         description: provider is the provider that was retrieved.
+    required:
+      - provider
   v1GetRepositoryByIdResponse:
     type: object
     properties:
       repository:
         $ref: '#/definitions/v1Repository'
+    required:
+      - repository
   v1GetRepositoryByNameResponse:
     type: object
     properties:
       repository:
         $ref: '#/definitions/v1Repository'
+    required:
+      - repository
   v1GetRuleTypeByIdResponse:
     type: object
     properties:
@@ -2880,6 +3587,8 @@ definitions:
         $ref: '#/definitions/v1RuleType'
         description: rule_type is the rule type.
     description: GetRuleTypeByIdResponse is the response to get a rule type by id.
+    required:
+      - ruleType
   v1GetRuleTypeByNameResponse:
     type: object
     properties:
@@ -2887,22 +3596,8 @@ definitions:
         $ref: '#/definitions/v1RuleType'
         description: rule_type is the rule type.
     description: GetRuleTypeByNameResponse is the response to get a rule type by name.
-  v1GetUnclaimedProvidersResponse:
-    type: object
-    properties:
-      providers:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ProviderParameter'
-        description: >-
-          providers is a set of parameters which can be supplied to allow the
-          user
-
-          to assign existing unclaimed credentials to a new provider in the
-          project
-
-          via CreateProvider().
+    required:
+      - ruleType
   v1GetUserResponse:
     type: object
     properties:
@@ -2919,6 +3614,9 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1ProjectRole'
+    required:
+      - user
+      - projectRoles
   v1GitHubAppParams:
     type: object
     properties:
@@ -3013,6 +3711,12 @@ definitions:
       emailSkipped:
         type: boolean
         description: emailSkipped is true if the email was not sent to the invitee.
+    description: >-
+      Invitation is an invitation to join a project. This is only used in
+      responses.
+    required:
+      - role
+      - project
   v1ListArtifactsResponse:
     type: object
     properties:
@@ -3021,6 +3725,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Artifact'
+    required:
+      - results
   v1ListChildProjectsResponse:
     type: object
     properties:
@@ -3029,6 +3735,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Project'
+    required:
+      - projects
+  v1ListDataSourcesResponse:
+    type: object
+    properties:
+      dataSources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1DataSource'
   v1ListEvaluationHistoryResponse:
     type: object
     properties:
@@ -3049,6 +3765,8 @@ definitions:
 
       It ships a collection of records retrieved and pointers to get to
       the next and/or previous pages of data.
+    required:
+      - data
   v1ListEvaluationResultsResponse:
     type: object
     properties:
@@ -3060,6 +3778,8 @@ definitions:
         description: >-
           Each entity selected by the list request will have _single_ entry in
           entities which contains results of all evaluations for each profile.
+    required:
+      - entities
   v1ListInvitationsResponse:
     type: object
     properties:
@@ -3068,6 +3788,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Invitation'
+    required:
+      - invitations
   v1ListProfilesResponse:
     type: object
     properties:
@@ -3076,6 +3798,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Profile'
+    required:
+      - profiles
   v1ListProjectsResponse:
     type: object
     properties:
@@ -3084,6 +3808,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Project'
+    required:
+      - projects
   v1ListProviderClassesResponse:
     type: object
     properties:
@@ -3092,6 +3818,8 @@ definitions:
         items:
           type: string
         description: provider_classes is the list of provider classes.
+    required:
+      - providerClasses
   v1ListProvidersResponse:
     type: object
     properties:
@@ -3105,6 +3833,8 @@ definitions:
         title: >-
           cursor is the cursor to use for the next page of results, empty if at
           the end
+    required:
+      - providers
   v1ListRemoteRepositoriesFromProviderResponse:
     type: object
     properties:
@@ -3122,6 +3852,9 @@ definitions:
           entities is the same list as the repositories, but it
           uses the new UpstreamEntityRef message. This is what
           we'll migrate to eventually.
+    required:
+      - results
+      - entities
   v1ListRepositoriesResponse:
     type: object
     properties:
@@ -3135,6 +3868,8 @@ definitions:
         title: >-
           cursor is the cursor to use for the next page of results, empty if at
           the end
+    required:
+      - results
   v1ListRoleAssignmentsResponse:
     type: object
     properties:
@@ -3154,6 +3889,9 @@ definitions:
         description: |-
           invitations contains outstanding role invitations which have not yet
           been accepted by a user.
+    required:
+      - roleAssignments
+      - invitations
   v1ListRolesResponse:
     type: object
     properties:
@@ -3162,6 +3900,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Role'
+    required:
+      - roles
   v1ListRuleTypesResponse:
     type: object
     properties:
@@ -3172,22 +3912,30 @@ definitions:
           $ref: '#/definitions/v1RuleType'
         description: rule_types is the list of rule types.
     description: ListRuleTypesResponse is the response to list rule types.
+    required:
+      - ruleTypes
   v1PatchProfileResponse:
     type: object
     properties:
       profile:
         $ref: '#/definitions/v1Profile'
+    required:
+      - profile
   v1PatchProjectResponse:
     type: object
     properties:
       project:
         $ref: '#/definitions/v1Project'
         description: project is the project that was updated.
+    required:
+      - project
   v1PatchProviderResponse:
     type: object
     properties:
       provider:
         $ref: '#/definitions/v1Provider'
+    required:
+      - provider
   v1Profile:
     type: object
     properties:
@@ -3296,16 +4044,22 @@ definitions:
       displayName:
         type: string
         description: display_name is the display name of the profile.
-    description: Profile defines a profile that is user defined.
+    description: |-
+      Profile defines a profile that is user defined.
+      All fields are optional because we want to allow partial updates.
   v1ProfileStatus:
     type: object
     properties:
       profileId:
         type: string
-        title: profile_id is the id of the profile
+        description: >-
+          profile_id is the id of the profile.  One of profile_id or
+          profile_name must be set.
       profileName:
         type: string
-        title: profile_name is the name of the profile
+        description: >-
+          profile_name is the name of the profile.  One of profile_id or
+          profile_name must be set.
       profileStatus:
         type: string
         title: profile_status is the status of the profile
@@ -3316,7 +4070,9 @@ definitions:
       profileDisplayName:
         type: string
         title: profile_display_name is the display name of the profile
-    title: get the overall profile status
+    title: get the overall profile status as output
+    required:
+      - profileStatus
   v1Project:
     type: object
     properties:
@@ -3326,6 +4082,9 @@ definitions:
         type: string
       description:
         type: string
+        description: |-
+          description is a human-readable description of the project.
+          This is optional.
       createdAt:
         type: string
         format: date-time
@@ -3338,7 +4097,13 @@ definitions:
           display_name allows for a human-readable name to be used.
           display_names are short *non-unique* strings to provide
           a user-friendly name for presentation in lists, etc.
-    title: Project API Objects
+          This is optional.
+    description: Project API Objects. This is only used in responses.
+    required:
+      - projectId
+      - name
+      - createdAt
+      - updatedAt
   v1ProjectPatch:
     type: object
     properties:
@@ -3358,6 +4123,9 @@ definitions:
     title: >-
       ProjectRole has the project along with the role the user has in the
       project
+    required:
+      - role
+      - project
   v1Provider:
     type: object
     properties:
@@ -3378,7 +4146,9 @@ definitions:
           in favor of the context field in CreateProviderRequest.
       version:
         type: string
-        description: version is the version of the provider.
+        description: |-
+          version is the version of the provider.
+          if unset, "v1" is assumed.
       implements:
         type: array
         items:
@@ -3404,6 +4174,14 @@ definitions:
 
           This is an output-only field. It may be: "set", "unset",
           "not_applicable".
+      id:
+        type: string
+        description: id is the unique identifier of the provider.
+    description: >-
+      Provider represents a provider that is used to interact with external
+      systems.
+
+      All fields are optional because we want to allow partial updates.
   v1ProviderParameter:
     type: object
     properties:
@@ -3428,6 +4206,9 @@ definitions:
         $ref: '#/definitions/v1Context'
       entity:
         type: string
+        title: entity is the entity type
+    required:
+      - entity
   v1ReconcileEntityRegistrationResponse:
     type: object
   v1RegisterRepoResult:
@@ -3437,6 +4218,8 @@ definitions:
         $ref: '#/definitions/v1Repository'
       status:
         $ref: '#/definitions/v1RegisterRepoResultStatus'
+    required:
+      - status
   v1RegisterRepoResultStatus:
     type: object
     properties:
@@ -3451,6 +4234,9 @@ definitions:
         type: string
       repository:
         $ref: '#/definitions/v1UpstreamRepositoryRef'
+        description: |-
+          repository is the repository to register. This is optional if entity
+          is set.
       context:
         $ref: '#/definitions/v1Context'
       entity:
@@ -3458,12 +4244,14 @@ definitions:
         description: |-
           entity is the entity to register. This is the same as the repository
           field, but uses the new UpstreamEntityRef message. This is what we'll
-          migrate to eventually.
+          migrate to eventually. This is optional if repository is set.
   v1RegisterRepositoryResponse:
     type: object
     properties:
       result:
         $ref: '#/definitions/v1RegisterRepoResult'
+    required:
+      - result
   v1RegistrableUpstreamEntityRef:
     type: object
     properties:
@@ -3472,6 +4260,8 @@ definitions:
       registered:
         type: boolean
         description: True if the entity is already registered in Minder.
+    required:
+      - entity
   v1RemoveRoleResponse:
     type: object
     properties:
@@ -3486,7 +4276,10 @@ definitions:
     properties:
       id:
         type: string
-        title: This is optional when returning remote repositories
+        description: |-
+          id is the unique identifier of the repository within Minder.
+          It is always populated, but the optional keyword is used for
+          backwards compatibility.
       context:
         $ref: '#/definitions/v1Context'
       owner:
@@ -3528,6 +4321,13 @@ definitions:
       properties:
         type: object
         description: properties is a map of properties of the entity.
+    description: Repository API objects. This is only used in responses.
+    required:
+      - id
+      - owner
+      - name
+      - isPrivate
+      - isFork
   v1ResolveInvitationResponse:
     type: object
     properties:
@@ -3550,6 +4350,81 @@ definitions:
         description: |-
           project_display is the display name of the project to which the user
           is invited.
+    required:
+      - role
+      - project
+      - isAccepted
+  v1RestDataSource:
+    type: object
+    properties:
+      def:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1RestDataSourceDef'
+        description: defs is the list of definitions for the REST API.
+    description: RestDataSource is the REST data source driver.
+  v1RestDataSourceDef:
+    type: object
+    properties:
+      endpoint:
+        type: string
+        description: |-
+          endpoint is the URL of the REST API. Note that endpoints are
+          templates that can be parameterized with variables. Parametrization
+          is done using RFC 6570.
+      method:
+        type: string
+        description: |-
+          method is the HTTP method to use for the request.
+          If left unset, it will default to "GET".
+      headers:
+        type: object
+        additionalProperties:
+          type: string
+        description: headers is a map of headers to send with the request.
+      bodyobj:
+        type: object
+        description: body is the body of the request.
+      bodystr:
+        type: string
+        description: bodystr is the body of the request as a string.
+      bodyFromField:
+        type: string
+        description: |-
+          body_from_field is the field in the input to use as the body.
+          If the value is an string, it will be used as the body, as is.
+          If the value is an object, it will be serialized as JSON.
+          If the value is not found in the input, the request will fail.
+      parse:
+        type: string
+        description: |-
+          parse is the parse configuration for the response.
+          This allows us to serialize the response into a structured format,
+          or not.
+          If left unset, the response will be treated as a string.
+          If set to "json", the response will be parsed as JSON.
+      fallback:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/RestDataSourceDefFallback'
+        description: |-
+          fallback is the fallback configuration for the response in case
+          of an unexpected status code.
+      expectedStatus:
+        type: array
+        items:
+          type: integer
+          format: int32
+        description: |-
+          expected_status is the expected status code for the response.
+          This may be repeated to allow for multiple expected status codes.
+          If left unset, it will default to 200.
+      inputSchema:
+        type: object
+        description: input_schema is the schema for the input to the REST API.
+    required:
+      - endpoint
   v1RestType:
     type: object
     properties:
@@ -3557,7 +4432,7 @@ definitions:
         type: string
         description: |-
           endpoint is the endpoint to fetch data from.
-          This can be a URL or the path on the API.bool
+          This can be a URL or path on the API.
           This is a required field and must be set.
           This is also evaluated via a template which allows
           us dynamically fill in the values.
@@ -3571,7 +4446,9 @@ definitions:
         description: headers are the headers to be sent to the endpoint.
       body:
         type: string
-        description: body is the body to be sent to the endpoint.
+        description: |-
+          body is the body to be sent to the endpoint.
+          This is expected to be a valid JSON string.
       parse:
         type: string
         description: parse is the parsing mechanism to be used to parse the data.
@@ -3579,13 +4456,24 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/RestTypeFallback'
+          $ref: '#/definitions/v1RestTypeFallback'
         description: |-
           fallback provides a body that the ingester would return in case
           the REST call returns a non-200 status code.
     description: |-
       RestType defines the rest data evaluation.
       This is used to fetch data from a REST endpoint.
+    required:
+      - endpoint
+  v1RestTypeFallback:
+    type: object
+    properties:
+      httpCode:
+        type: integer
+        format: int32
+      body:
+        type: string
+        description: This is expected to be a valid JSON string.
   v1Role:
     type: object
     properties:
@@ -3598,6 +4486,10 @@ definitions:
       description:
         type: string
         description: description is the description of the role.
+    required:
+      - name
+      - displayName
+      - description
   v1RoleAssignment:
     type: object
     properties:
@@ -3622,6 +4514,8 @@ definitions:
       lastName:
         type: string
         description: last_name is the last name of the subject.
+    required:
+      - role
   v1RuleEvaluationStatus:
     type: object
     properties:
@@ -3684,7 +4578,7 @@ definitions:
           external system
       severity:
         $ref: '#/definitions/v1Severity'
-        title: severity is the severity of the rule
+        description: severity is the severity of the rule. This may be empty.
       ruleEvaluationId:
         type: string
         title: rule_evaluation_id is the id of the rule evaluation
@@ -3700,6 +4594,12 @@ definitions:
         $ref: '#/definitions/v1RuleTypeReleasePhase'
         title: release_phase is the phase of the release
     title: get the status of the rules for a given profile
+    required:
+      - ruleId
+      - entity
+      - status
+      - ruleTypeName
+      - releasePhase
   v1RuleType:
     type: object
     properties:
@@ -3733,10 +4633,14 @@ definitions:
         description: def is the definition of the rule type.
       description:
         type: string
-        description: description is the description of the rule type.
+        description: |-
+          description is the description of the rule type.
+          This is expected to be a valid markdown formatted string.
       guidance:
         type: string
-        description: guidance are instructions we give the user in case a rule fails.
+        description: |-
+          guidance are instructions we give the user in case a rule fails.
+          This is expected to be a valid markdown formatted string.
       severity:
         $ref: '#/definitions/v1Severity'
         description: severity is the severity of the rule type.
@@ -3748,6 +4652,11 @@ definitions:
     description: |-
       RuleType defines rules that may or may not be user defined.
       The version is assumed from the folder's version.
+    required:
+      - name
+      - def
+      - description
+      - guidance
   v1RuleTypeReleasePhase:
     type: string
     enum:
@@ -3798,22 +4707,61 @@ definitions:
         type: string
       accessToken:
         type: string
+        description: access_token is the token to store.
       owner:
         type: string
+        description: >-
+          owner is the owner (e.g GitHub org) that the provider is associated
+          with.
+
+          This is optional.
       context:
         $ref: '#/definitions/v1Context'
+    required:
+      - accessToken
   v1StoreProviderTokenResponse:
     type: object
+  v1StructDataSource:
+    type: object
+    properties:
+      def:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1StructDataSourceDef'
+        description: defs is the list of definitions for the structured data API.
+    description: StructDataSource is the structured data source driver.
+  v1StructDataSourceDef:
+    type: object
+    properties:
+      path:
+        $ref: '#/definitions/DefPath'
+        description: Path is the path specification for the structured data source.
+    required:
+      - path
+  v1UpdateDataSourceRequest:
+    type: object
+    properties:
+      dataSource:
+        $ref: '#/definitions/v1DataSource'
+  v1UpdateDataSourceResponse:
+    type: object
+    properties:
+      dataSource:
+        $ref: '#/definitions/v1DataSource'
   v1UpdateProfileRequest:
     type: object
     properties:
       profile:
         $ref: '#/definitions/v1Profile'
+    required:
+      - profile
   v1UpdateProfileResponse:
     type: object
     properties:
       profile:
         $ref: '#/definitions/v1Profile'
+    required:
+      - profile
   v1UpdateProjectRequest:
     type: object
     properties:
@@ -3822,16 +4770,22 @@ definitions:
         description: context is the context in which the project is updated.
       displayName:
         type: string
-        description: display_name is the display name of the project to update.
+        description: |-
+          display_name is the display name of the project to update.
+          This is optional.
       description:
         type: string
-        description: description is the description of the project to update.
+        description: |-
+          description is the description of the project to update.
+          This is optional.
   v1UpdateProjectResponse:
     type: object
     properties:
       project:
         $ref: '#/definitions/v1Project'
         description: project is the project that was updated.
+    required:
+      - project
   v1UpdateRoleRequest:
     type: object
     properties:
@@ -3857,6 +4811,8 @@ definitions:
         title: >-
           email is the email address of the subject used for updating
           invitations
+    required:
+      - roles
   v1UpdateRoleResponse:
     type: object
     properties:
@@ -3879,6 +4835,8 @@ definitions:
         $ref: '#/definitions/v1RuleType'
         description: rule_type is the rule type to be updated.
     description: UpdateRuleTypeRequest is the request to update a rule type.
+    required:
+      - ruleType
   v1UpdateRuleTypeResponse:
     type: object
     properties:
@@ -3886,6 +4844,8 @@ definitions:
         $ref: '#/definitions/v1RuleType'
         description: rule_type is the rule type that was updated.
     description: UpdateRuleTypeResponse is the response to update a rule type.
+    required:
+      - ruleType
   v1UpstreamEntityRef:
     type: object
     properties:
@@ -3914,6 +4874,11 @@ definitions:
     properties:
       owner:
         type: string
+        description: >-
+          owner is the owner (e.g GitHub org) that the provider is associated
+          with.
+
+          This is optional.
       name:
         type: string
       repoId:
@@ -3929,6 +4894,8 @@ definitions:
         description: |-
           True if the repository is already registered in Minder.
           This is only set on output, and is ignored on input.
+    required:
+      - name
   v1UserRecord:
     type: object
     properties:
@@ -3944,20 +4911,33 @@ definitions:
         type: string
         format: date-time
     title: user record to be returned
+    required:
+      - id
+      - identitySubject
+      - createdAt
+      - updatedAt
   v1VerifyProviderCredentialResponse:
     type: object
     properties:
       created:
         type: boolean
+        description: created is true if the provider was created.
       providerName:
         type: string
+        description: |-
+          provider_name is the name of the provider that was created.
+          This is populated if creation was successful.
     title: >-
       VerifyProviderCredentialRequest responds with a boolean indicating if the
       provider has been created and the provider
 
       name, if it has been created
+    required:
+      - created
   v1VerifyProviderTokenFromResponse:
     type: object
     properties:
       status:
         type: string
+    required:
+      - status
