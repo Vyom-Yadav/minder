@@ -14,9 +14,11 @@ import (
 	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel"
 
 	"github.com/mindersec/minder/internal/db"
 	remindermessages "github.com/mindersec/minder/internal/reminder/messages"
+	"github.com/mindersec/minder/internal/reminder/metrics"
 	reminderconfig "github.com/mindersec/minder/pkg/config/reminder"
 	"github.com/mindersec/minder/pkg/eventer/constants"
 )
@@ -42,6 +44,8 @@ type reminder struct {
 	ticker *time.Ticker
 
 	eventPublisher message.Publisher
+
+	metrics *metrics.Metrics
 }
 
 // NewReminder creates a new reminder instance
@@ -78,6 +82,20 @@ func (r *reminder) Start(ctx context.Context) error {
 	interval := r.cfg.RecurrenceConfig.Interval
 	if interval <= 0 {
 		return fmt.Errorf("invalid interval: %s", r.cfg.RecurrenceConfig.Interval)
+	}
+
+	if r.cfg.MetricsConfig.Enabled {
+		go func() {
+			if err := r.startMetricServer(ctx); err != nil {
+				logger.Error().Err(err).Msg("error starting metrics server")
+			}
+		}()
+
+		var err error
+		r.metrics, err = metrics.NewMetrics(otel.Meter("reminder"))
+		if err != nil {
+			return err
+		}
 	}
 
 	r.ticker = time.NewTicker(interval)
@@ -126,7 +144,7 @@ func (r *reminder) sendReminders(ctx context.Context) error {
 	logger := zerolog.Ctx(ctx)
 
 	// Fetch a batch of repositories
-	repos, err := r.getRepositoryBatch(ctx)
+	repos, repoToLastUpdated, err := r.getRepositoryBatch(ctx)
 	if err != nil {
 		return fmt.Errorf("error fetching repository batch: %w", err)
 	}
@@ -143,6 +161,10 @@ func (r *reminder) sendReminders(ctx context.Context) error {
 		return fmt.Errorf("error creating reminder messages: %w", err)
 	}
 
+	if r.metrics != nil {
+		r.metrics.RecordBatch(ctx, int64(len(repos)))
+	}
+
 	err = r.eventPublisher.Publish(constants.TopicQueueRepoReminder, messages...)
 	if err != nil {
 		return fmt.Errorf("error publishing messages: %w", err)
@@ -151,13 +173,18 @@ func (r *reminder) sendReminders(ctx context.Context) error {
 	repoIds := make([]uuid.UUID, len(repos))
 	for _, repo := range repos {
 		repoIds = append(repoIds, repo.ID)
+		if r.metrics != nil {
+			// sendDelay = Now() - ReminderLastSent - MinElapsed
+			reminderLastSent := repo.ReminderLastSent
+			if reminderLastSent.Valid {
+				r.metrics.SendDelay.Record(ctx, (time.Since(reminderLastSent.Time) - r.cfg.RecurrenceConfig.MinElapsed).Seconds())
+			} else {
+				// Recording metric for first time reminders (after how long was the initial reminder sent)
+				newSendDelay := time.Since(repoToLastUpdated[repo.ID]) - r.cfg.RecurrenceConfig.MinElapsed
+				r.metrics.NewSendDelay.Record(ctx, newSendDelay.Seconds())
+			}
+		}
 	}
-
-	// TODO: Collect Metrics
-	// Potential metrics:
-	// - Gauge: Number of reminders in the current batch
-	// - UpDownCounter: Average reminders sent per batch
-	// - Histogram: reminder_last_sent time distribution
 
 	err = r.store.UpdateReminderLastSentForRepositories(ctx, repoIds)
 	if err != nil {
@@ -167,7 +194,7 @@ func (r *reminder) sendReminders(ctx context.Context) error {
 	return nil
 }
 
-func (r *reminder) getRepositoryBatch(ctx context.Context) ([]db.Repository, error) {
+func (r *reminder) getRepositoryBatch(ctx context.Context) ([]db.Repository, map[uuid.UUID]time.Time, error) {
 	logger := zerolog.Ctx(ctx)
 
 	logger.Debug().Msgf("fetching repositories after cursor: %s", r.repositoryCursor)
@@ -176,22 +203,25 @@ func (r *reminder) getRepositoryBatch(ctx context.Context) ([]db.Repository, err
 		Limit: int64(r.cfg.RecurrenceConfig.BatchSize),
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	eligibleRepos, err := r.getEligibleRepositories(ctx, repos)
+	eligibleRepos, eligibleReposLastUpdated, err := r.getEligibleRepositories(ctx, repos)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	logger.Debug().Msgf("%d/%d repositories are eligible for reminders", len(eligibleRepos), len(repos))
 
 	r.updateRepositoryCursor(ctx, repos)
 
-	return eligibleRepos, nil
+	return eligibleRepos, eligibleReposLastUpdated, nil
 }
 
-func (r *reminder) getEligibleRepositories(ctx context.Context, repos []db.Repository) ([]db.Repository, error) {
+func (r *reminder) getEligibleRepositories(ctx context.Context, repos []db.Repository) (
+	[]db.Repository, map[uuid.UUID]time.Time, error,
+) {
 	eligibleRepos := make([]db.Repository, 0, len(repos))
+	eligibleReposLastUpdated := make(map[uuid.UUID]time.Time, len(repos))
 
 	// We have a slice of repositories, but the sqlc-generated code wants a slice of UUIDs,
 	// and similarly returns slices of ID -> date (in possibly different order), so we need
@@ -202,7 +232,7 @@ func (r *reminder) getEligibleRepositories(ctx context.Context, repos []db.Repos
 	}
 	oldestRuleEvals, err := r.store.ListOldestRuleEvaluationsByRepositoryId(ctx, repoIds)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	idToLastUpdate := make(map[uuid.UUID]time.Time, len(oldestRuleEvals))
 	for _, times := range oldestRuleEvals {
@@ -213,10 +243,11 @@ func (r *reminder) getEligibleRepositories(ctx context.Context, repos []db.Repos
 	for _, repo := range repos {
 		if t, ok := idToLastUpdate[repo.ID]; ok && t.Before(cutoff) {
 			eligibleRepos = append(eligibleRepos, repo)
+			eligibleReposLastUpdated[repo.ID] = t
 		}
 	}
 
-	return eligibleRepos, nil
+	return eligibleRepos, eligibleReposLastUpdated, nil
 }
 
 func (r *reminder) updateRepositoryCursor(ctx context.Context, repos []db.Repository) {
